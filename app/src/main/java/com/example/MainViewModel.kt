@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 
 enum class AppScreen {
     START_CINEMATIC,
+    AUTH,
     HOME,
     GAMEPLAY,
     BATTLE_LOBBY,
@@ -233,5 +234,56 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val now = System.currentTimeMillis()
         val dayMillis = 24 * 60 * 60 * 1000L
         return now - _playerProfile.value.lastDailyRewardClaimTime >= dayMillis
+    }
+
+    fun registerUser(
+        fullName: String,
+        username: String,
+        emailOrPhone: String,
+        password: String,
+        mkoa: String
+    ) {
+        viewModelScope.launch {
+            repository.registerUser(fullName, username, emailOrPhone, password, mkoa)
+            _currentScreen.value = AppScreen.HOME
+        }
+    }
+
+    fun loginUser(emailOrPhone: String, password: String) {
+        viewModelScope.launch {
+            repository.loginUser(emailOrPhone, password)
+            _currentScreen.value = AppScreen.HOME
+        }
+    }
+
+    fun logoutUser() {
+        viewModelScope.launch {
+            repository.logoutUser()
+            _currentScreen.value = AppScreen.AUTH
+        }
+    }
+
+    fun setPlayerBalance(coins: Long, gems: Int) {
+        viewModelScope.launch {
+            repository.setPlayerBalance(coins, gems)
+        }
+    }
+
+    fun unlockAllContent() {
+        viewModelScope.launch {
+            repository.unlockAllContent()
+        }
+    }
+
+    fun resetPlayerData() {
+        viewModelScope.launch {
+            repository.resetPlayerData()
+        }
+    }
+
+    fun updatePlayerStats(highScore: Long, level: Int, trophies: Int) {
+        viewModelScope.launch {
+            repository.updatePlayerStats(highScore, level, trophies)
+        }
     }
 }

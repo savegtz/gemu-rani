@@ -229,8 +229,19 @@ class GameEngine(
         SoundEngine.playGem()
     }
 
+    fun skipCountdown() {
+        if (_gameState.value == GameState.COUNTDOWN) {
+            countdownTimer = 0f
+            SoundEngine.playCountdown(true)
+            _gameState.value = GameState.RUNNING
+        }
+    }
+
     // Input actions
     fun moveLeft() {
+        if (_gameState.value == GameState.COUNTDOWN) {
+            skipCountdown()
+        }
         if (_gameState.value != GameState.RUNNING) return
         if (currentLaneIndex > 0) {
             currentLaneIndex--
@@ -241,6 +252,9 @@ class GameEngine(
     }
 
     fun moveRight() {
+        if (_gameState.value == GameState.COUNTDOWN) {
+            skipCountdown()
+        }
         if (_gameState.value != GameState.RUNNING) return
         if (currentLaneIndex < 2) {
             currentLaneIndex++
@@ -251,6 +265,9 @@ class GameEngine(
     }
 
     fun jump() {
+        if (_gameState.value == GameState.COUNTDOWN) {
+            skipCountdown()
+        }
         if (_gameState.value != GameState.RUNNING) return
         val maxJumps = if (selectedCharacter.id == "asha") 2 else 1
         val jumpLvl = (upgrades["jump"] ?: 1).coerceIn(1, 10)
@@ -387,14 +404,39 @@ class GameEngine(
 
         // Update speed & distance
         val hasSuperSpeed = isPowerUpActive(PowerUpType.SUPER_SPEED)
+        val hasBodaboda = isPowerUpActive(PowerUpType.BODABODA_TURBO)
         val boardSpeedBoost = if (isHoverboardActive && selectedHoverboard.id == "board_serengeti") 1.15f else 1.0f
         val jetpackSpeedBoost = if (isJetpackActive) 1.25f else 1.0f
-        val targetSpeed = (if (hasSuperSpeed) baseSpeed * 1.5f else (baseSpeed + (distanceRunMeters / 150f)).coerceAtMost(maxSpeed)) * boardSpeedBoost * jetpackSpeedBoost
+        val bodabodaSpeedBoost = if (hasBodaboda) 1.45f else 1.0f
+        val targetSpeed = (if (hasSuperSpeed || hasBodaboda) baseSpeed * 1.5f else (baseSpeed + (distanceRunMeters / 150f)).coerceAtMost(maxSpeed)) * boardSpeedBoost * jetpackSpeedBoost * bodabodaSpeedBoost
         currentSpeedMetersPerSec += (targetSpeed - currentSpeedMetersPerSec) * dt * 2.0f
 
         val stepDistance = currentSpeedMetersPerSec * dt
+        val oldDist = distanceRunMeters
         distanceRunMeters += stepDistance
         onMissionEvent("distance", stepDistance.toInt())
+
+        // Dynamic Weather & Day/Night transition based on distance
+        currentWeather = when {
+            distanceRunMeters > 1300f -> WeatherType.NEON_NIGHT
+            distanceRunMeters > 600f -> WeatherType.RAINY
+            else -> WeatherType.SUNNY
+        }
+
+        // Swahili voice callout milestone shouts
+        if (oldDist < 500f && distanceRunMeters >= 500f) {
+            currentConductorCallout = ConductorCallout("Hapo Chacha! 500m!", "Swahili speed milestone reached!", "🔥")
+            conductorCalloutTimer = 3.0f
+            SoundEngine.playSwahiliShout("chacha")
+        } else if (oldDist < 1000f && distanceRunMeters >= 1000f) {
+            currentConductorCallout = ConductorCallout("Mambo ni Moto! 1000m!", "Kilometer 1 crossed!", "⚡")
+            conductorCalloutTimer = 3.0f
+            SoundEngine.playSwahiliShout("moto")
+        } else if (oldDist < 1500f && distanceRunMeters >= 1500f) {
+            currentConductorCallout = ConductorCallout("Kazi Iendelee! Kasi ya Duma!", "Keep running strong!", "🐆")
+            conductorCalloutTimer = 3.0f
+            SoundEngine.playSwahiliShout("twenzetu")
+        }
 
         // Score update
         val scoreBoost = if (selectedCharacter.id == "juma" && hasSuperSpeed) 2.5f else 1.0f
@@ -517,6 +559,7 @@ class GameEngine(
     private fun updateObstacles(dt: Float) {
         val hasGhostMode = isPowerUpActive(PowerUpType.GHOST_MODE)
         val hasSuperSpeed = isPowerUpActive(PowerUpType.SUPER_SPEED)
+        val hasBodaboda = isPowerUpActive(PowerUpType.BODABODA_TURBO)
 
         val it = obstacles.iterator()
         while (it.hasNext()) {
@@ -529,8 +572,21 @@ class GameEngine(
 
             val relZ = obs.zDistance - distanceRunMeters
 
+            // Bodaboda Turbo Smash
+            if (relZ in -1.2f..1.5f && hasBodaboda) {
+                val laneX = obs.lane.xOffset
+                if (abs(playerLaneX - laneX) < 0.6f) {
+                    SoundEngine.playCrash()
+                    SoundEngine.playBodaBodaEngine()
+                    spawnExplosionParticles(playerLaneX, playerY + 0.6f, BrightAmber, 20)
+                    score += 200
+                    it.remove()
+                    continue
+                }
+            }
+
             // Collision check with player
-            if (relZ in -1.2f..1.5f && !hasGhostMode && !hasSuperSpeed && invulnerableTimer <= 0f) {
+            if (relZ in -1.2f..1.5f && !hasGhostMode && !hasSuperSpeed && !hasBodaboda && invulnerableTimer <= 0f) {
                 val laneX = obs.lane.xOffset
                 val isSameLane = abs(playerLaneX - laneX) < 0.55f
 
@@ -665,9 +721,9 @@ class GameEngine(
     }
 
     private fun updateCollectibles(dt: Float) {
-        val magnetActive = isPowerUpActive(PowerUpType.COIN_MAGNET)
+        val magnetActive = isPowerUpActive(PowerUpType.COIN_MAGNET) || isPowerUpActive(PowerUpType.BODABODA_TURBO)
         val magnetLvl = (upgrades["magnet"] ?: 1).coerceIn(1, 10)
-        val magnetRadius = 18f * selectedCharacter.baseMagnet * (1f + (magnetLvl - 1) * 0.05f)
+        val magnetRadius = (18f * selectedCharacter.baseMagnet * (1f + (magnetLvl - 1) * 0.05f)) * (if (isPowerUpActive(PowerUpType.BODABODA_TURBO)) 1.6f else 1.0f)
 
         val it = collectibles.iterator()
         while (it.hasNext()) {
@@ -742,6 +798,10 @@ class GameEngine(
 
         if (type == PowerUpType.FREEZE_ATTACK) {
             activateFreezeInBattle()
+        } else if (type == PowerUpType.BODABODA_TURBO) {
+            SoundEngine.playBodaBodaEngine()
+            currentConductorCallout = ConductorCallout("Panda Bodaboda Twenzetu!", "Bodaboda ride mode active!", "🏍️")
+            conductorCalloutTimer = 3.0f
         }
     }
 

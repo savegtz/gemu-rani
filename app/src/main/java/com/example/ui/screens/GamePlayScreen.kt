@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -281,16 +282,41 @@ fun GamePlayScreen(
             visible = gameState == GameState.COUNTDOWN,
             enter = fadeIn(),
             exit = fadeOut(),
-            modifier = Modifier.align(Alignment.Center)
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable { engine.skipCountdown() }
         ) {
-            val count = engine.countdownTimer.toInt().coerceAtLeast(1)
-            Text(
-                text = if (count > 0) "$count" else "RUN!",
-                color = NeonGold,
-                fontSize = 72.sp,
-                fontWeight = FontWeight.Black,
-                letterSpacing = 4.sp
-            )
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val count = engine.countdownTimer.toInt().coerceAtLeast(1)
+                    Text(
+                        text = if (count > 0) "$count" else "TWENZETU!",
+                        color = NeonGold,
+                        fontSize = 80.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 4.sp
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = DarkBgCard.copy(alpha = 0.85f),
+                        border = ButtonDefaults.outlinedButtonBorder(true)
+                    ) {
+                        Text(
+                            text = "⚡ Gusa skrini au telezesha kuanza mara moja",
+                            color = SerengetiYellow,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp)
+                        )
+                    }
+                }
+            }
         }
 
         // 6. Pause Modal Dialog
@@ -313,6 +339,8 @@ fun GamePlayScreen(
                 isBattle = (engine.gameMode == GameMode.BATTLE_1V1 || engine.gameMode == GameMode.BATTLE_4P || engine.gameMode == GameMode.TOURNAMENT),
                 rank = engine.myCurrentRank,
                 onRestart = { engine.startGame() },
+                onReviveWithAd = { engine.revivePlayer() },
+                onDoubleCoinsWithAd = { engine.doubleMatchCoins() },
                 onReturnHome = onReturnHome
             )
         }
@@ -598,8 +626,14 @@ private fun GameOverModal(
     isBattle: Boolean,
     rank: Int,
     onRestart: () -> Unit,
+    onReviveWithAd: () -> Unit,
+    onDoubleCoinsWithAd: () -> Unit,
     onReturnHome: () -> Unit
 ) {
+    var showReviveAdModal by remember { mutableStateOf(false) }
+    var showDoubleCoinsAdModal by remember { mutableStateOf(false) }
+    var hasDoubledCoins by remember { mutableStateOf(false) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -615,13 +649,13 @@ private fun GameOverModal(
                 )
             ),
             modifier = Modifier
-                .width(320.dp)
+                .width(340.dp)
                 .padding(16.dp)
         ) {
             Column(
-                modifier = Modifier.padding(22.dp),
+                modifier = Modifier.padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
                     text = if (isVictory) "🏆 VICTORY!" else "GAME OVER",
@@ -646,15 +680,13 @@ private fun GameOverModal(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(4.dp))
-
                 // Score Display
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(text = "TOTAL SCORE", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                     Text(
                         text = "$score",
                         color = TextPrimary,
-                        fontSize = 32.sp,
+                        fontSize = 30.sp,
                         fontWeight = FontWeight.Black
                     )
                 }
@@ -665,7 +697,7 @@ private fun GameOverModal(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     RewardBadge("🏃 Distance", "${distance.toInt()}m", TextAccentCyan)
-                    RewardBadge("🪙 Coins", "+$coins", TextAccentGold)
+                    RewardBadge("🪙 Coins", if (hasDoubledCoins) "+${coins * 2}" else "+$coins", TextAccentGold)
                     if (gems > 0) {
                         RewardBadge("💎 Gems", "+$gems", ElectricCyan)
                     }
@@ -674,8 +706,66 @@ private fun GameOverModal(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                // SPONSOR AD REWARD BUTTONS
+                if (!isVictory) {
+                    // Watch Sponsor Ad to Revive with Shield & Hoverboard
+                    Button(
+                        onClick = {
+                            SoundEngine.playPowerUp()
+                            showReviveAdModal = true
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = AfricanEmerald),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(46.dp)
+                            .testTag("revive_with_ad_button")
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(text = "💖", fontSize = 14.sp)
+                            Text(
+                                text = "FUFUKA KWA TANGAZO (REVIVE)",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
+                    }
+                }
 
+                // Watch Sponsor Ad to 2X Double Coins
+                if (coins > 0 && !hasDoubledCoins) {
+                    OutlinedButton(
+                        onClick = {
+                            SoundEngine.playGem()
+                            showDoubleCoinsAdModal = true
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = NeonGold),
+                        border = ButtonDefaults.outlinedButtonBorder(true),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(42.dp)
+                            .testTag("double_coins_ad_button")
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(text = "⚡", fontSize = 13.sp)
+                            Text(
+                                text = "ZIDISHA SARAFU 2X (DOUBLE COINS)",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                // Standard Run Again Button
                 Button(
                     onClick = {
                         SoundEngine.playPowerUp()
@@ -683,9 +773,9 @@ private fun GameOverModal(
                     },
                     shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = BrightAmber),
-                    modifier = Modifier.fillMaxWidth().height(48.dp).testTag("play_again_button")
+                    modifier = Modifier.fillMaxWidth().height(44.dp).testTag("play_again_button")
                 ) {
-                    Text(text = "RUN AGAIN", color = DarkBgMain, fontSize = 14.sp, fontWeight = FontWeight.Black)
+                    Text(text = "RUN AGAIN", color = DarkBgMain, fontSize = 13.sp, fontWeight = FontWeight.Black)
                 }
 
                 OutlinedButton(
@@ -693,9 +783,34 @@ private fun GameOverModal(
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth().testTag("return_home_button")
                 ) {
-                    Text(text = "RETURN TO CITY", color = TextPrimary, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    Text(text = "RETURN TO CITY", color = TextPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 }
             }
+        }
+
+        // Sponsor Video Ad for Revive
+        if (showReviveAdModal) {
+            SponsorVideoAdModal(
+                goal = AdRewardGoal.REVIVE_RUNNER,
+                onRewardEarned = { _, _ ->
+                    showReviveAdModal = false
+                    onReviveWithAd()
+                },
+                onDismiss = { showReviveAdModal = false }
+            )
+        }
+
+        // Sponsor Video Ad for 2X Coins
+        if (showDoubleCoinsAdModal) {
+            SponsorVideoAdModal(
+                goal = AdRewardGoal.DOUBLE_RUN_COINS,
+                onRewardEarned = { _, _ ->
+                    hasDoubledCoins = true
+                    showDoubleCoinsAdModal = false
+                    onDoubleCoinsWithAd()
+                },
+                onDismiss = { showDoubleCoinsAdModal = false }
+            )
         }
     }
 }

@@ -66,6 +66,19 @@ object SoundEngine {
         }
     }
 
+    fun playMenuClick() {
+        val duration = (SAMPLE_RATE * 0.05f).toInt()
+        val buffer = ShortArray(duration)
+        for (i in 0 until duration) {
+            val t = i.toFloat() / SAMPLE_RATE
+            val freq = 650f - (t / 0.05f) * 200f
+            val env = 1f - (i.toFloat() / duration)
+            val sample = (sin(2.0 * PI * freq * t) * 0.3 * env * Short.MAX_VALUE).toInt()
+            buffer[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        playPcm(buffer)
+    }
+
     fun playJump() {
         val duration = (SAMPLE_RATE * 0.18f).toInt()
         val buffer = ShortArray(duration)
@@ -211,25 +224,85 @@ object SoundEngine {
     fun startAfricanRhythmBeat() {
         if (!isMusicEnabled || musicJob != null) return
         musicJob = scope.launch {
-            val scale = floatArrayOf(220f, 261.63f, 293.66f, 329.63f, 392f, 440f, 523.25f)
+            val scale = floatArrayOf(220f, 261.63f, 293.66f, 329.63f, 392f, 440f, 523.25f, 659.25f)
+            val bassScale = floatArrayOf(55f, 65.41f, 73.42f, 82.41f, 98.0f)
             var step = 0
             while (isActive && isMusicEnabled) {
-                // African polyrhythmic bongo synth pattern
+                // Amapiano Log Drum + African Bongo syncopation
                 if (step % 2 == 0) {
                     playBongoHit(low = (step % 4 == 0))
                 }
+                // Amapiano warm sub bass pulse
+                if (step % 4 == 0) {
+                    val bassNote = bassScale[(step / 4) % bassScale.size]
+                    playAmapianoLogDrum(bassNote)
+                }
+                // Kalimba / Marimba melodic lead
                 if (step % 3 == 0) {
                     val note = scale[(step / 3) % scale.size]
                     playKalimbaNote(note)
                 }
                 step++
-                delay(160)
+                delay(150)
             }
         }
     }
 
+    private fun playAmapianoLogDrum(freq: Float) {
+        if (!isSoundEnabled) return
+        val duration = (SAMPLE_RATE * 0.16f).toInt()
+        val buffer = ShortArray(duration)
+        for (i in 0 until duration) {
+            val t = i.toFloat() / SAMPLE_RATE
+            val env = (1f - (i.toFloat() / duration)) * (1f - (i.toFloat() / duration))
+            val pitchDrop = freq * (1f - (t / 0.16f) * 0.35f)
+            val sub = sin(2.0 * PI * pitchDrop * t) * 0.45
+            val punch = sin(2.0 * PI * (pitchDrop * 2.5) * t) * 0.18
+            val sample = ((sub + punch) * env * Short.MAX_VALUE).toInt()
+            buffer[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        playPcm(buffer)
+    }
+
     fun startMusic() {
         startAfricanRhythmBeat()
+    }
+
+    fun playBodaBodaEngine() {
+        val duration = (SAMPLE_RATE * 0.32f).toInt()
+        val buffer = ShortArray(duration)
+        for (i in 0 until duration) {
+            val t = i.toFloat() / SAMPLE_RATE
+            val freq = 80f + sin(t * 120.0).toFloat() * 25f + (t / 0.32f) * 70f
+            val env = 1f - (i.toFloat() / duration) * 0.2f
+            val enginePuff = sin(2.0 * PI * freq * t) * 0.35f + (Random.nextFloat() * 2f - 1f) * 0.15f
+            val sample = (enginePuff * env * Short.MAX_VALUE).toInt()
+            buffer[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        playPcm(buffer)
+    }
+
+    fun playSwahiliShout(type: String = "twenzetu") {
+        val duration = (SAMPLE_RATE * 0.28f).toInt()
+        val buffer = ShortArray(duration)
+        val basePitch = when (type.lowercase()) {
+            "twenzetu" -> 440f
+            "chacha" -> 523.25f
+            "kariakoo" -> 392f
+            "moto" -> 659.25f
+            else -> 493.88f
+        }
+        for (i in 0 until duration) {
+            val t = i.toFloat() / SAMPLE_RATE
+            val freq = basePitch + sin(t * 70.0).toFloat() * 60f
+            val env = if (i < duration * 0.2f) i / (duration * 0.2f) else 1f - (i - duration * 0.2f) / (duration * 0.8f)
+            val form1 = sin(2.0 * PI * freq * t) * 0.3
+            val form2 = sin(2.0 * PI * (freq * 2f) * t) * 0.2
+            val form3 = sin(2.0 * PI * (freq * 3f) * t) * 0.1
+            val sample = ((form1 + form2 + form3) * env * Short.MAX_VALUE).toInt()
+            buffer[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        playPcm(buffer)
     }
 
     private fun playBongoHit(low: Boolean) {

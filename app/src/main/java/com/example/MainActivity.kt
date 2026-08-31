@@ -71,6 +71,23 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
             AppScreen.START_CINEMATIC -> {
                 StartCinematicScreen(
                     onStartGame = {
+                        if (profile.isLoggedIn) {
+                            viewModel.navigateTo(AppScreen.HOME)
+                        } else {
+                            viewModel.navigateTo(AppScreen.AUTH)
+                        }
+                    }
+                )
+            }
+            AppScreen.AUTH -> {
+                AuthScreen(
+                    onRegisterSuccess = { fullName, username, emailOrPhone, password, mkoa ->
+                        viewModel.registerUser(fullName, username, emailOrPhone, password, mkoa)
+                    },
+                    onLoginSuccess = { emailOrPhone, password ->
+                        viewModel.loginUser(emailOrPhone, password)
+                    },
+                    onContinueAsGuest = {
                         viewModel.navigateTo(AppScreen.HOME)
                     }
                 )
@@ -142,6 +159,13 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
                 MissionsScreen(
                     missions = missions,
                     onClaimReward = { missionId -> viewModel.claimMissionReward(missionId) },
+                    onStartSafariChapter = { chapter ->
+                        viewModel.startRun(
+                            mode = GameMode.ENDLESS,
+                            worldId = chapter.worldId,
+                            characterId = profile.selectedCharacterId
+                        )
+                    },
                     onBack = { viewModel.navigateTo(AppScreen.HOME) }
                 )
             }
@@ -164,6 +188,7 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
                     profile = profile,
                     onUpdateProfile = { name, country, flag -> viewModel.updateProfile(name, country, flag) },
                     onSelectCrew = { crewId -> viewModel.selectCrew(crewId) },
+                    onLogout = { viewModel.logoutUser() },
                     onBack = { viewModel.navigateTo(AppScreen.HOME) }
                 )
             }
@@ -174,7 +199,12 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
             }
             AppScreen.ADMIN -> {
                 AdminDashboardScreen(
+                    profile = profile,
                     onGrantCurrency = { coins, gems -> viewModel.grantAdminCurrency(coins, gems) },
+                    onSetBalance = { coins, gems -> viewModel.setPlayerBalance(coins, gems) },
+                    onUnlockAll = { viewModel.unlockAllContent() },
+                    onResetData = { viewModel.resetPlayerData() },
+                    onUpdateStats = { highScore, level, trophies -> viewModel.updatePlayerStats(highScore, level, trophies) },
                     onBack = { viewModel.navigateTo(AppScreen.HOME) }
                 )
             }

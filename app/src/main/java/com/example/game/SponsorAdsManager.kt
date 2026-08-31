@@ -124,8 +124,6 @@ object SponsorAdsManager {
     val activeCampaign: SponsorCampaign
         get() = if (campaigns.isNotEmpty()) campaigns[activeCampaignIndex.value % campaigns.size] else campaigns[0]
 
-    fun getActiveCampaign(): SponsorCampaign = activeCampaign
-
     fun getNextCampaign(): SponsorCampaign {
         nextCampaign()
         return activeCampaign

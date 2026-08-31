@@ -48,6 +48,21 @@ object GameRenderer3D {
 
         // 7. 3D Particles
         drawParticles(scope, engine, width, height, horizonY, vanishingX)
+
+        // 8. Dynamic Weather Overlays (Rain Streaks)
+        if (engine.currentWeather == WeatherType.RAINY) {
+            val t = engine.runTimeSeconds
+            for (i in 0 until 35) {
+                val rx = (width * ((i * 37) % 100) / 100f + (t * 80f)) % width
+                val ry = (height * ((i * 53) % 100) / 100f + (t * 600f)) % height
+                scope.drawLine(
+                    color = ElectricCyan.copy(alpha = 0.5f),
+                    start = Offset(rx, ry),
+                    end = Offset(rx - 6f, ry + 18f),
+                    strokeWidth = 2f
+                )
+            }
+        }
     }
 
     private fun drawSkyAndEnvironment(
@@ -354,7 +369,7 @@ object GameRenderer3D {
 
         // Neon Glow border
         val pulse = (sin(time * 6f) * 0.2f + 0.8f).coerceIn(0.5f, 1f)
-        val activeAd = SponsorAdsManager.getActiveCampaign()
+        val activeAd = SponsorAdsManager.activeCampaign
 
         scope.drawRoundRect(
             color = NeonGold.copy(alpha = 0.4f * pulse),
@@ -455,11 +470,11 @@ object GameRenderer3D {
     ): Triple<Float, Float, Float> {
         val depthFactor = 0.032f
         val scale = (1f / (1f + z * depthFactor)).coerceIn(0f, 1.2f)
-        val roadY = horizonY + (height * 0.98f - horizonY) * (scale * scale)
+        val roadY = horizonY + (height * 0.81f - horizonY) * (scale * scale)
 
         val laneSpread = (roadBottomWidth * 0.33f) * scale
         val screenX = vanishingX + (laneX * laneSpread)
-        val screenY = roadY - (laneY * 110f * scale)
+        val screenY = roadY - (laneY * 95f * scale)
 
         return Triple(screenX, screenY, scale)
     }
@@ -1031,11 +1046,12 @@ object GameRenderer3D {
 
         // 1. Dynamic Shadow on Road
         val shadowScale = (1f - (engine.playerY / 4f)).coerceIn(0.3f, 1f)
-        val shadowY = horizonY + (height * 0.98f - horizonY)
+        val groundRoadY = horizonY + (height * 0.81f - horizonY)
+        val shadowY = groundRoadY
         scope.drawOval(
             color = Color.Black.copy(alpha = 0.55f * shadowScale),
-            topLeft = Offset(px - (runnerW * 0.6f * shadowScale), shadowY - 10f),
-            size = Size(runnerW * 1.2f * shadowScale, 18f * shadowScale)
+            topLeft = Offset(px - (runnerW * 0.6f * shadowScale), shadowY - 8f),
+            size = Size(runnerW * 1.2f * shadowScale, 16f * shadowScale)
         )
 
         // 2. Shield Bubble Effect
@@ -1263,6 +1279,73 @@ object GameRenderer3D {
                 color = board.trailColor,
                 radius = 6f,
                 center = Offset(px + boardW * 0.38f, boardY)
+            )
+        }
+
+        // 7. Active 3D Bodaboda Motorcycle & Headlight Beam
+        if (engine.isPowerUpActive(PowerUpType.BODABODA_TURBO)) {
+            val bodaW = 72f
+            val bodaH = 42f
+            val bodaY = py + 2f
+
+            // Bodaboda Headlight Beam (Projected forward in 3D)
+            val beamPath = Path().apply {
+                moveTo(px - 8f, bodaY - 14f)
+                lineTo(px + 8f, bodaY - 14f)
+                lineTo(px + 45f, bodaY - 120f)
+                lineTo(px - 45f, bodaY - 120f)
+                close()
+            }
+            scope.drawPath(
+                beamPath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(NeonGold.copy(alpha = 0.0f), NeonGold.copy(alpha = 0.45f)),
+                    startY = bodaY - 120f,
+                    endY = bodaY - 14f
+                )
+            )
+
+            // Bodaboda Chassis & Fuel Tank (Bright Tanzanian Red/Amber)
+            scope.drawRoundRect(
+                color = BrightAmber,
+                topLeft = Offset(px - bodaW * 0.35f, bodaY - 20f),
+                size = Size(bodaW * 0.7f, 18f),
+                cornerRadius = CornerRadius(6f, 6f)
+            )
+
+            // Bodaboda Chrome Handlebars
+            scope.drawLine(
+                color = Color(0xFFE2E8F0),
+                start = Offset(px - 24f, bodaY - 26f),
+                end = Offset(px + 24f, bodaY - 26f),
+                strokeWidth = 5f
+            )
+
+            // Front Headlight
+            scope.drawCircle(color = SerengetiYellow, radius = 7f, center = Offset(px, bodaY - 20f))
+            scope.drawCircle(color = Color.White, radius = 3.5f, center = Offset(px, bodaY - 20f))
+
+            // Spinning Wheels (Front & Rear)
+            val wheelRotation = sin(time * 30f) * 6f
+            scope.drawOval(
+                color = Color(0xFF0F172A),
+                topLeft = Offset(px - 22f, bodaY - 8f),
+                size = Size(14f, 22f)
+            )
+            scope.drawOval(
+                color = Color(0xFF0F172A),
+                topLeft = Offset(px + 8f, bodaY - 8f),
+                size = Size(14f, 22f)
+            )
+            // Silver Rims
+            scope.drawCircle(color = Color(0xFF94A3B8), radius = 4f, center = Offset(px - 15f, bodaY + 3f))
+            scope.drawCircle(color = Color(0xFF94A3B8), radius = 4f, center = Offset(px + 15f, bodaY + 3f))
+
+            // Exhaust Smoke Puffs
+            scope.drawCircle(
+                color = Color.White.copy(alpha = 0.6f),
+                radius = 6f + sin(time * 20f) * 2f,
+                center = Offset(px - 28f, bodaY + 4f)
             )
         }
     }

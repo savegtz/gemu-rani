@@ -31,6 +31,7 @@ fun LeaderboardScreen(
     profile: PlayerProfileEntity,
     onBack: () -> Unit
 ) {
+    var activeTab by remember { mutableStateOf("Wachezaji") }
     val regions = listOf("Continental 🌍", "Tanzania 🇹🇿", "Zanzibar 🏝️", "Kenya 🇰🇪", "Uganda 🇺🇬", "Rwanda 🇷🇼", "South Africa 🇿🇦")
     var selectedRegion by remember { mutableStateOf(regions[0]) }
 
@@ -76,114 +77,205 @@ fun LeaderboardScreen(
                 }
                 Column {
                     Text(
-                        text = "AFRICAN RANKS & TROPHIES",
+                        text = "BONGO RANKS & MIKOA",
                         color = TextAccentGold,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Black
                     )
                     Text(
-                        text = "Top Sprinters across Africa",
+                        text = "Top Sprinters & Regional Champions in Tanzania",
                         color = TextSecondary,
                         fontSize = 12.sp
                     )
                 }
             }
 
-            // Region Tabs
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(regions) { r ->
-                    val isSel = r == selectedRegion
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isSel) NeonGold else DarkBgCard,
-                        border = ButtonDefaults.outlinedButtonBorder(true),
-                        modifier = Modifier.clickable { selectedRegion = r }
+            // Category Toggle (Wachezaji vs Mikoa ya Tanzania)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(DarkBgCard, RoundedCornerShape(12.dp))
+                    .padding(4.dp)
+            ) {
+                listOf("Wachezaji 🏃", "Mikoa ya Tanzania 🇹🇿").forEach { tab ->
+                    val isSel = activeTab == tab
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(
+                                color = if (isSel) NeonGold else Color.Transparent,
+                                shape = RoundedCornerShape(10.dp)
+                            )
+                            .clickable { activeTab = tab }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = r,
-                            color = if (isSel) DarkBgMain else TextPrimary,
-                            fontSize = 12.sp,
+                            text = tab,
+                            color = if (isSel) DarkBgMain else TextSecondary,
                             fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                            fontSize = 12.sp
                         )
                     }
                 }
             }
 
-            // Top 3 Podium
-            val top3 = entries.take(3)
-            if (top3.size >= 3) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.Bottom
+            if (activeTab == "Mikoa ya Tanzania 🇹🇿") {
+                // Mikoa Regional Leaderboard
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    // 2nd Place
-                    PodiumCard(top3[1], height = 120.dp, medal = "🥈", color = Color(0xFF94A3B8), modifier = Modifier.weight(1f))
-                    // 1st Place
-                    PodiumCard(top3[0], height = 145.dp, medal = "🥇", color = NeonGold, modifier = Modifier.weight(1f))
-                    // 3rd Place
-                    PodiumCard(top3[2], height = 105.dp, medal = "🥉", color = BrightAmber, modifier = Modifier.weight(1f))
-                }
-            }
-
-            // Full Leaderboard list
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(entries) { entry ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                color = if (entry.isUser) DarkBgCardElevated else DarkBgCard,
-                                shape = RoundedCornerShape(14.dp)
-                            )
-                            .border(
-                                1.dp,
-                                if (entry.isUser) NeonGold else DarkBorder,
-                                RoundedCornerShape(14.dp)
-                            )
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                    items(com.example.game.MkoaLeaderboardCatalog.mikoa) { mkoa ->
                         Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(DarkBgCard, RoundedCornerShape(14.dp))
+                                .border(1.dp, if (mkoa.rank <= 3) mkoa.color else DarkBorder, RoundedCornerShape(14.dp))
+                                .padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Text(
-                                text = "#${entry.rank}",
-                                color = if (entry.rank <= 3) NeonGold else TextMuted,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Black,
-                                modifier = Modifier.width(32.dp)
-                            )
-                            Text(text = entry.countryFlag, fontSize = 20.sp)
-                            Column {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
                                 Text(
-                                    text = entry.username + if (entry.isUser) " (YOU)" else "",
-                                    color = if (entry.isUser) NeonGold else TextPrimary,
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold
+                                    text = "#${mkoa.rank}",
+                                    color = if (mkoa.rank <= 3) mkoa.color else TextMuted,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.width(32.dp)
+                                )
+                                Text(text = mkoa.flagEmoji, fontSize = 24.sp)
+                                Column {
+                                    Text(
+                                        text = mkoa.name,
+                                        color = TextPrimary,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "${mkoa.zone} • Champ: ${mkoa.championRunner}",
+                                        color = TextSecondary,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "%,d".format(mkoa.totalScore),
+                                    color = mkoa.color,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black
                                 )
                                 Text(
-                                    text = "${entry.trophies} 🏆 • ${entry.wins} WINS",
-                                    color = TextSecondary,
+                                    text = "${mkoa.activeRunners} wakimbiaji",
+                                    color = TextMuted,
                                     fontSize = 10.sp
                                 )
                             }
                         }
-
-                        Column(horizontalAlignment = Alignment.End) {
+                    }
+                }
+            } else {
+                // Region Filter Tabs
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(regions) { r ->
+                        val isSel = r == selectedRegion
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isSel) NeonGold else DarkBgCard,
+                            border = ButtonDefaults.outlinedButtonBorder(true),
+                            modifier = Modifier.clickable { selectedRegion = r }
+                        ) {
                             Text(
-                                text = "${entry.score}",
-                                color = TextAccentGold,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Black
+                                text = r,
+                                color = if (isSel) DarkBgMain else TextPrimary,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                             )
-                            Text(text = "PTS", color = TextMuted, fontSize = 9.sp)
+                        }
+                    }
+                }
+
+                // Top 3 Podium
+                val top3 = entries.take(3)
+                if (top3.size >= 3) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        // 2nd Place
+                        PodiumCard(top3[1], height = 120.dp, medal = "🥈", color = Color(0xFF94A3B8), modifier = Modifier.weight(1f))
+                        // 1st Place
+                        PodiumCard(top3[0], height = 145.dp, medal = "🥇", color = NeonGold, modifier = Modifier.weight(1f))
+                        // 3rd Place
+                        PodiumCard(top3[2], height = 105.dp, medal = "🥉", color = BrightAmber, modifier = Modifier.weight(1f))
+                    }
+                }
+
+                // Full Leaderboard list
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(entries) { entry ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    color = if (entry.isUser) DarkBgCardElevated else DarkBgCard,
+                                    shape = RoundedCornerShape(14.dp)
+                                )
+                                .border(
+                                    1.dp,
+                                    if (entry.isUser) NeonGold else DarkBorder,
+                                    RoundedCornerShape(14.dp)
+                                )
+                                .padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text(
+                                    text = "#${entry.rank}",
+                                    color = if (entry.rank <= 3) NeonGold else TextMuted,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black,
+                                    modifier = Modifier.width(32.dp)
+                                )
+                                Text(text = entry.countryFlag, fontSize = 20.sp)
+                                Column {
+                                    Text(
+                                        text = entry.username + if (entry.isUser) " (YOU)" else "",
+                                        color = if (entry.isUser) NeonGold else TextPrimary,
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "${entry.trophies} 🏆 • ${entry.wins} WINS",
+                                        color = TextSecondary,
+                                        fontSize = 10.sp
+                                    )
+                                }
+                            }
+
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text(
+                                    text = "${entry.score}",
+                                    color = TextAccentGold,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                                Text(text = "PTS", color = TextMuted, fontSize = 9.sp)
+                            }
                         }
                     }
                 }

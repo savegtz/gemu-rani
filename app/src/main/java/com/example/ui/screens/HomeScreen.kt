@@ -84,6 +84,97 @@ fun HomeScreen(
                 onAdminClick = onOpenAdmin
             )
 
+            // Live Ops: Maintenance Alert (If enabled by Admin)
+            if (com.example.game.AdminLiveConfig.isMaintenanceMode) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = CrimsonFire.copy(alpha = 0.2f),
+                    border = ButtonDefaults.outlinedButtonBorder(true),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(text = "⚠️", fontSize = 22.sp)
+                        Column {
+                            Text(
+                                text = "HALI YA MATENGENEZO YA SEVA",
+                                color = CrimsonFire,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 12.sp
+                            )
+                            Text(
+                                text = com.example.game.AdminLiveConfig.maintenanceMessage,
+                                color = Color(0xFFFCA5A5),
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Live Ops: Global Live Announcement Banner (If active)
+            if (com.example.game.AdminLiveConfig.isAnnouncementActive && com.example.game.AdminLiveConfig.globalAnnouncement.isNotEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = DarkBgCardElevated,
+                    border = ButtonDefaults.outlinedButtonBorder(true),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = NeonGold
+                        ) {
+                            Text(
+                                text = "📢",
+                                fontSize = 14.sp,
+                                modifier = Modifier.padding(6.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Text(
+                                    text = "TANGAZO LA UTAWALA",
+                                    color = NeonGold,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                                if (com.example.game.AdminLiveConfig.globalCoinMultiplier > 1.0f) {
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = AfricanEmerald.copy(alpha = 0.3f)
+                                    ) {
+                                        Text(
+                                            text = "${com.example.game.AdminLiveConfig.globalCoinMultiplier.toInt()}X COINS ⚡",
+                                            color = AfricanEmerald,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Black,
+                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = com.example.game.AdminLiveConfig.globalAnnouncement,
+                                color = TextPrimary,
+                                fontSize = 11.sp,
+                                lineHeight = 15.sp
+                            )
+                        }
+                    }
+                }
+            }
+
             // 2. Featured Safari Event Hero Banner
             FeaturedSafariBanner(
                 worldName = world.name,
@@ -291,7 +382,7 @@ private fun SponsorClientBannerCard(
     onWatchVideoAd: () -> Unit
 ) {
     val context = LocalContext.current
-    var currentCampaign by remember { mutableStateOf<SponsorCampaign>(SponsorAdsManager.getActiveCampaign()) }
+    var currentCampaign by remember { mutableStateOf<SponsorCampaign>(SponsorAdsManager.activeCampaign) }
 
     LaunchedEffect(currentCampaign) {
         SponsorAdsManager.logAdImpression(currentCampaign.id)

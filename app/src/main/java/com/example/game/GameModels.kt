@@ -274,7 +274,8 @@ enum class PowerUpType(
     DOUBLE_COINS("2x Coins", "Double all collected coins", "🪙", SerengetiYellow, 12f),
     JUMP_BOOST("Spring Boost", "Mega high jumps", "👟", AfricanEmerald, 10f),
     GHOST_MODE("Ghost Phase", "Pass through obstacles", "👻", Color(0xFFA855F7), 8f),
-    FREEZE_ATTACK("Freeze Blast", "Slows multiplayer rivals", "❄️", Color(0xFF38BDF8), 5f)
+    FREEZE_ATTACK("Freeze Blast", "Slows multiplayer rivals", "❄️", Color(0xFF38BDF8), 5f),
+    BODABODA_TURBO("Bodaboda Express", "Panda Bodaboda & Vunja Vizuizi!", "🏍️", BrightAmber, 12f)
 }
 
 data class Obstacle(
@@ -513,5 +514,115 @@ object CrewCatalog {
     fun getById(id: String): RunnerCrew {
         return allCrews.find { it.id == id } ?: allCrews.first()
     }
+}
+
+data class StorySafariChapter(
+    val id: String,
+    val chapterNumber: Int,
+    val title: String,
+    val swahiliTitle: String,
+    val subtitle: String,
+    val worldId: String,
+    val targetDistance: Float,
+    val rewardCoins: Int,
+    val rewardGems: Int,
+    val landmarkEmoji: String,
+    val isCompleted: Boolean = false,
+    val isUnlocked: Boolean = true
+)
+
+object StorySafariCatalog {
+    val chapters = listOf(
+        StorySafariChapter(
+            id = "safari_ch1",
+            chapterNumber = 1,
+            title = "Kariakoo Dash to Ferry",
+            swahiliTitle = "Sura 1: Mbio za Kariakoo",
+            subtitle = "Kimbia kutoka soko la Kariakoo hadi Kivukoni Ferry bila kugonga Daladala!",
+            worldId = "dar_es_salaam",
+            targetDistance = 600f,
+            rewardCoins = 1000,
+            rewardGems = 10,
+            landmarkEmoji = "🏙️",
+            isUnlocked = true
+        ),
+        StorySafariChapter(
+            id = "safari_ch2",
+            chapterNumber = 2,
+            title = "Mikumi Savannah Wildlife Sprint",
+            swahiliTitle = "Sura 2: Mbuga ya Mikumi",
+            subtitle = "Ruka wanyamapori na mikorosho kwenye mbuga ya wanyama ya Mikumi!",
+            worldId = "arusha",
+            targetDistance = 1000f,
+            rewardCoins = 2000,
+            rewardGems = 15,
+            landmarkEmoji = "🦒",
+            isUnlocked = true
+        ),
+        StorySafariChapter(
+            id = "safari_ch3",
+            chapterNumber = 3,
+            title = "Serengeti Great Migration",
+            swahiliTitle = "Sura 3: Msafara wa Serengeti",
+            subtitle = "Kimbizana na nyumbu na pundamilia kwenye tambarare za Serengeti!",
+            worldId = "arusha",
+            targetDistance = 1500f,
+            rewardCoins = 3500,
+            rewardGems = 25,
+            landmarkEmoji = "🐆",
+            isUnlocked = false
+        ),
+        StorySafariChapter(
+            id = "safari_ch4",
+            chapterNumber = 4,
+            title = "Kilimanjaro Summit Ascent",
+            swahiliTitle = "Sura 4: Kilele cha Kilimanjaro",
+            subtitle = "Panda mlima mrefu zaidi barani Afrika hadi kilele cha Uhuru Peak!",
+            worldId = "arusha",
+            targetDistance = 2000f,
+            rewardCoins = 5000,
+            rewardGems = 40,
+            landmarkEmoji = "🏔️",
+            isUnlocked = false
+        ),
+        StorySafariChapter(
+            id = "safari_ch5",
+            chapterNumber = 5,
+            title = "Zanzibar Spice Island Finale",
+            swahiliTitle = "Sura 5: Visiwa vya Zanzibar",
+            subtitle = "Teleza kwa Hoverboard kwenye fukwe za Nungwi na Stone Town Forodhani!",
+            worldId = "zanzibar",
+            targetDistance = 2500f,
+            rewardCoins = 8000,
+            rewardGems = 60,
+            landmarkEmoji = "🏝️",
+            isUnlocked = false
+        )
+    )
+}
+
+data class MkoaRegion(
+    val id: String,
+    val name: String,
+    val zone: String,
+    val flagEmoji: String,
+    val totalScore: Long,
+    val activeRunners: Int,
+    val championRunner: String,
+    val rank: Int,
+    val color: Color
+)
+
+object MkoaLeaderboardCatalog {
+    val mikoa = listOf(
+        MkoaRegion("dar", "Dar es Salaam", "Pwani Kanda", "🌊", 12450800L, 8420, "Juma_Kariakoo", 1, ElectricCyan),
+        MkoaRegion("arusha", "Arusha", "Kaskazini Kanda", "🏔️", 10892400L, 6210, "Asha_Safari", 2, SerengetiYellow),
+        MkoaRegion("mwanza", "Mwanza", "Ziwa Kanda", "🐟", 9450200L, 5180, "RockCity_King", 3, ZanzibarTurquoise),
+        MkoaRegion("zanzibar", "Zanzibar (Unguja & Pemba)", "Visiwani Kanda", "🏝️", 8940000L, 4890, "Ali_StoneTown", 4, AfricanEmerald),
+        MkoaRegion("dodoma", "Dodoma", "Kati Kanda", "🏛️", 7820500L, 4120, "Bunge_Sprinter", 5, BrightAmber),
+        MkoaRegion("mbeya", "Mbeya", "Nyanda za Juu Kusini", "⛰️", 6950000L, 3650, "Mbeya_Highlander", 6, CrimsonFire),
+        MkoaRegion("tanga", "Tanga", "Kaskazini Mashariki", "🌴", 5840200L, 2980, "Mkwakwani_Runner", 7, NeonGold),
+        MkoaRegion("kilimanjaro", "Kilimanjaro (Moshi)", "Kaskazini Kanda", "❄️", 5210900L, 2640, "Kibo_Challenger", 8, TanzaniteBlue)
+    )
 }
 

@@ -7,6 +7,11 @@ import androidx.room.PrimaryKey
 data class PlayerProfileEntity(
     @PrimaryKey val id: Int = 1,
     val username: String = "Juma_Runner",
+    val fullName: String = "Juma Bakari",
+    val emailOrPhone: String = "",
+    val passwordHash: String = "",
+    val isLoggedIn: Boolean = false,
+    val selectedMkoa: String = "Dar es Salaam",
     val country: String = "Tanzania",
     val countryFlag: String = "🇹🇿",
     val avatarId: String = "juma",

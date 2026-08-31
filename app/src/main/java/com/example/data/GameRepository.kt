@@ -250,9 +250,85 @@ class GameRepository(private val playerDao: PlayerDao) {
         return true
     }
 
+    suspend fun registerUser(
+        fullName: String,
+        username: String,
+        emailOrPhone: String,
+        passwordHash: String,
+        mkoa: String
+    ) {
+        val current = playerDao.getPlayerProfileSync() ?: PlayerProfileEntity()
+        val updated = current.copy(
+            fullName = fullName.trim(),
+            username = username.trim().ifEmpty { fullName.trim().replace(" ", "_") },
+            emailOrPhone = emailOrPhone.trim(),
+            passwordHash = passwordHash,
+            selectedMkoa = mkoa,
+            isLoggedIn = true
+        )
+        playerDao.updateProfile(updated)
+    }
+
+    suspend fun loginUser(emailOrPhone: String, passwordHash: String): Boolean {
+        val current = playerDao.getPlayerProfileSync() ?: PlayerProfileEntity()
+        val updated = current.copy(
+            emailOrPhone = emailOrPhone.trim(),
+            passwordHash = passwordHash,
+            isLoggedIn = true
+        )
+        playerDao.updateProfile(updated)
+        return true
+    }
+
+    suspend fun logoutUser() {
+        val current = playerDao.getPlayerProfileSync() ?: return
+        playerDao.updateProfile(current.copy(isLoggedIn = false))
+    }
+
     suspend fun grantAdminCurrency(coins: Long, gems: Int) {
         val current = playerDao.getPlayerProfileSync() ?: return
         playerDao.updateProfile(current.copy(coins = current.coins + coins, gems = current.gems + gems))
+    }
+
+    suspend fun setPlayerBalance(coins: Long, gems: Int) {
+        val current = playerDao.getPlayerProfileSync() ?: return
+        playerDao.updateProfile(current.copy(coins = coins, gems = gems))
+    }
+
+    suspend fun unlockAllContent() {
+        val allItems = listOf(
+            "juma" to "character", "asha" to "character", "kassim" to "character", "fatuma" to "character", "bibi" to "character", "baraka" to "character",
+            "board_basic" to "hoverboard", "board_daladala" to "hoverboard", "board_boda" to "hoverboard", "board_tanzanite" to "hoverboard",
+            "board_kanga" to "hoverboard", "board_safari" to "hoverboard", "board_kilimanjaro" to "hoverboard", "board_gold_lion" to "hoverboard",
+            "dar_es_salaam" to "world", "zanzibar" to "world", "arusha" to "world", "mwanza" to "world", "dodoma" to "world"
+        )
+        allItems.forEach { (id, type) ->
+            playerDao.unlockItem(UnlockedItemEntity(itemId = id, itemType = type))
+        }
+    }
+
+    suspend fun resetPlayerData() {
+        val defaultProfile = PlayerProfileEntity(
+            id = 1,
+            username = "Juma_Runner",
+            fullName = "Juma Bakari",
+            coins = 500,
+            gems = 15,
+            bestScore = 0L,
+            totalDistanceMeters = 0L,
+            level = 1,
+            trophies = 100
+        )
+        playerDao.insertOrUpdateProfile(defaultProfile)
+    }
+
+    suspend fun updatePlayerStats(bestScore: Long, level: Int, trophies: Int) {
+        val current = playerDao.getPlayerProfileSync() ?: return
+        playerDao.updateProfile(current.copy(
+            bestScore = bestScore,
+            level = level,
+            trophies = trophies
+        ))
     }
 
     companion object {

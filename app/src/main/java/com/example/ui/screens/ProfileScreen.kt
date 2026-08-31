@@ -34,6 +34,7 @@ fun ProfileScreen(
     profile: PlayerProfileEntity,
     onUpdateProfile: (name: String, country: String, flag: String) -> Unit,
     onSelectCrew: (crewId: String) -> Unit = {},
+    onLogout: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -363,6 +364,49 @@ fun ProfileScreen(
                     StatRow("Multiplayer Trophies", "${profile.trophies} 🏆", BrightAmber)
                     StatRow("Continental Battles Won", "${profile.wins} WINS", AfricanEmerald)
                     StatRow("Runner Level", "Level ${profile.level}", ZanzibarTurquoise)
+                }
+            }
+
+            // User Account & Authentication Status
+            Card(
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = DarkBgCard),
+                border = ButtonDefaults.outlinedButtonBorder(true),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = "TAARIFA ZA AKAUNTI YAKO",
+                        color = NeonGold,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                    StatRow("Jina Kamili", profile.fullName.ifEmpty { profile.username }, TextPrimary)
+                    StatRow("Simu / Email", profile.emailOrPhone.ifEmpty { "Haijawekwa (Mgeni)" }, ElectricCyan)
+                    StatRow("Mkoa / Eneo", profile.selectedMkoa, SerengetiYellow)
+                    StatRow("Hali ya Usajili", if (profile.isLoggedIn) "Umejisajili Rasmi ✅" else "Mchezaji wa Muda ⚡", AfricanEmerald)
+
+                    Button(
+                        onClick = {
+                            SoundEngine.playMenuClick()
+                            onLogout()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = CrimsonFire.copy(alpha = 0.85f)),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
+                    ) {
+                        Text(
+                            text = if (profile.isLoggedIn) "Toka / Badili Akaunti (Logout)" else "Jisajili / Ingia Akaunti Yako",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
