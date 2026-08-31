@@ -9,10 +9,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -33,12 +30,15 @@ import com.example.ui.theme.*
 
 @Composable
 fun StartCinematicScreen(
-    onStartGame: () -> Unit
+    onStartGame: () -> Unit,
+    onOpenAuth: () -> Unit,
+    onOpenAdmin: () -> Unit,
+    onPlayAsGuest: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "cinematic")
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
+        initialValue = 0.96f,
+        targetValue = 1.04f,
         animationSpec = infiniteRepeatable(
             animation = tween(1200, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -56,8 +56,6 @@ fun StartCinematicScreen(
         label = "glow"
     )
 
-    val interactionSource = remember { MutableInteractionSource() }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -71,20 +69,13 @@ fun StartCinematicScreen(
                     )
                 )
             )
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) {
-                SoundEngine.playPowerUp()
-                onStartGame()
-            }
             .testTag("start_cinematic_screen"),
         contentAlignment = Alignment.Center
     ) {
         // Glowing background aurora rings
         Box(
             modifier = Modifier
-                .size(320.dp)
+                .size(340.dp)
                 .scale(pulseScale)
                 .alpha(glowAlpha * 0.5f)
                 .background(
@@ -129,7 +120,7 @@ fun StartCinematicScreen(
                 Text(text = "🌍", fontSize = 16.sp)
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // Main 3D Logo
             Text(
@@ -149,33 +140,37 @@ fun StartCinematicScreen(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Subtitle Slogan
             Text(
                 text = "RUN THE STREETS. OWN AFRICA.",
                 color = TextSecondary,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 3.sp,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            // Interactive "TAP TO RUN" Pill
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = BrightAmber,
-                shadowElevation = 12.dp,
+            // 1. ANZA KUCHEZA (START GAME)
+            Button(
+                onClick = {
+                    SoundEngine.playPowerUp()
+                    onStartGame()
+                },
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = BrightAmber),
                 modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
                     .scale(pulseScale)
                     .testTag("tap_to_start_button")
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
@@ -184,26 +179,105 @@ fun StartCinematicScreen(
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = "TAP TO START",
+                        text = "ANZA KUKIMBIA (PLAY NOW)",
                         color = DarkBgMain,
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.Black,
-                        letterSpacing = 2.sp
+                        letterSpacing = 1.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 2. JISAJILI / INGIA (REGISTER / LOGIN)
+            Button(
+                onClick = {
+                    SoundEngine.playMenuClick()
+                    onOpenAuth()
+                },
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = AfricanEmerald),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .testTag("start_register_button")
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(text = "📝", fontSize = 16.sp)
+                    Text(
+                        text = "JISAJILI / INGIA (REGISTER / LOGIN)",
+                        color = Color.White,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 3. ADMIN PANEL ACCESS
+            Surface(
+                shape = RoundedCornerShape(20.dp),
+                color = DarkBgCardElevated,
+                border = ButtonDefaults.outlinedButtonBorder(true),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        SoundEngine.playMenuClick()
+                        onOpenAdmin()
+                    }
+                    .testTag("start_admin_panel_button")
+            ) {
+                Row(
+                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(text = "👑", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "PANELI YA ADMIN (ADMIN DASHBOARD)",
+                        color = NeonGold,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 1.sp
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // 4. Quick Guest Mode
+            Text(
+                text = "⚡ Au gusa hapa kucheza kama Mgeni (Play as Guest)",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier
+                    .clickable {
+                        SoundEngine.playMenuClick()
+                        onPlayAsGuest()
+                    }
+                    .padding(8.dp)
+                    .testTag("start_guest_play_link")
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Quick feature tags
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(text = "⚡ 3D ENDLESS", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text(text = "•", color = TextMuted, fontSize = 11.sp)
-                Text(text = "🏁 REALTIME BATTLES", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text(text = "•", color = TextMuted, fontSize = 11.sp)
-                Text(text = "🛡️ 4 HEROES", color = TextMuted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text(text = "⚡ 3D ENDLESS", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(text = "•", color = TextMuted, fontSize = 10.sp)
+                Text(text = "🏁 REALTIME BATTLES", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                Text(text = "•", color = TextMuted, fontSize = 10.sp)
+                Text(text = "🛡️ 4 HEROES", color = TextMuted, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
         }
     }

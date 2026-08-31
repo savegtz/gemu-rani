@@ -41,7 +41,8 @@ import com.example.ui.theme.*
 fun AuthScreen(
     onRegisterSuccess: (fullName: String, username: String, emailOrPhone: String, password: String, mkoa: String) -> Unit,
     onLoginSuccess: (emailOrPhone: String, password: String) -> Unit,
-    onContinueAsGuest: () -> Unit
+    onContinueAsGuest: () -> Unit,
+    onOpenAdmin: () -> Unit = {}
 ) {
     var isRegisterMode by remember { mutableStateOf(true) }
     var fullName by remember { mutableStateOf("") }
@@ -447,6 +448,35 @@ fun AuthScreen(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
+            }
+
+            // Direct Admin Dashboard Entrance
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = DarkBgCardElevated,
+                border = ButtonDefaults.outlinedButtonBorder(true),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        SoundEngine.playMenuClick()
+                        onOpenAdmin()
+                    }
+                    .testTag("auth_admin_panel_button")
+            ) {
+                Row(
+                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(text = "👑", fontSize = 16.sp)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "PANELI YA UTENGENEZAJI (ADMIN DASHBOARD)",
+                        color = NeonGold,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

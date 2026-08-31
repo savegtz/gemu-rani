@@ -74,8 +74,17 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
                         if (profile.isLoggedIn) {
                             viewModel.navigateTo(AppScreen.HOME)
                         } else {
-                            viewModel.navigateTo(AppScreen.AUTH)
+                            viewModel.navigateTo(AppScreen.HOME)
                         }
+                    },
+                    onOpenAuth = {
+                        viewModel.navigateTo(AppScreen.AUTH)
+                    },
+                    onOpenAdmin = {
+                        viewModel.navigateTo(AppScreen.ADMIN)
+                    },
+                    onPlayAsGuest = {
+                        viewModel.navigateTo(AppScreen.HOME)
                     }
                 )
             }
@@ -89,6 +98,9 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
                     },
                     onContinueAsGuest = {
                         viewModel.navigateTo(AppScreen.HOME)
+                    },
+                    onOpenAdmin = {
+                        viewModel.navigateTo(AppScreen.ADMIN)
                     }
                 )
             }
@@ -112,6 +124,7 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
                     onOpenAdmin = { viewModel.navigateTo(AppScreen.ADMIN) },
                     onClaimDailyReward = { viewModel.claimDailyReward() },
                     dailyRewardAvailable = viewModel.isDailyRewardAvailable(),
+                    onOpenAuth = { viewModel.navigateTo(AppScreen.AUTH) },
                     onClaimSponsorReward = { coins, gems -> viewModel.claimSponsorAdReward(coins, gems) }
                 )
             }
@@ -189,12 +202,14 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
                     onUpdateProfile = { name, country, flag -> viewModel.updateProfile(name, country, flag) },
                     onSelectCrew = { crewId -> viewModel.selectCrew(crewId) },
                     onLogout = { viewModel.logoutUser() },
+                    onOpenAdmin = { viewModel.navigateTo(AppScreen.ADMIN) },
                     onBack = { viewModel.navigateTo(AppScreen.HOME) }
                 )
             }
             AppScreen.SETTINGS -> {
                 SettingsScreen(
-                    onBack = { viewModel.navigateTo(AppScreen.HOME) }
+                    onBack = { viewModel.navigateTo(AppScreen.HOME) },
+                    onOpenAdmin = { viewModel.navigateTo(AppScreen.ADMIN) }
                 )
             }
             AppScreen.ADMIN -> {

@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,7 +19,8 @@ import com.example.ui.theme.*
 
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenAdmin: () -> Unit = {}
 ) {
     var sfxEnabled by remember { mutableStateOf(SoundEngine.isSoundEnabled) }
     var musicEnabled by remember { mutableStateOf(SoundEngine.isMusicEnabled) }
@@ -128,6 +130,47 @@ fun SettingsScreen(
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                         )
                     }
+                }
+            }
+
+            // Dedicated Admin Dashboard Access Button
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = DarkBgCardElevated,
+                border = ButtonDefaults.outlinedButtonBorder(true),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable {
+                        SoundEngine.playMenuClick()
+                        onOpenAdmin()
+                    }
+                    .testTag("settings_open_admin_button")
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(text = "👑", fontSize = 20.sp)
+                        Column {
+                            Text(
+                                text = "Paneli ya Msimamizi (Admin Panel)",
+                                color = NeonGold,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                            Text(
+                                text = "Live Ops, Sarafu, Matangazo, na Wachezaji",
+                                color = TextSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+                    Text(text = "FUNGUA →", color = NeonGold, fontSize = 12.sp, fontWeight = FontWeight.Black)
                 }
             }
         }

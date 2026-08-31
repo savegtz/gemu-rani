@@ -40,6 +40,7 @@ fun GamePlayScreen(
 
     // 60 FPS Game Loop
     var lastFrameTimeNanos by remember { mutableLongStateOf(0L) }
+    var frameTick by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(Unit) {
         engine.startGame()
@@ -53,6 +54,7 @@ fun GamePlayScreen(
                     if (lastFrameTimeNanos > 0) {
                         val dt = ((frameTimeNanos - lastFrameTimeNanos) / 1_000_000_000f).coerceIn(0.001f, 0.05f)
                         engine.update(dt)
+                        frameTick = frameTimeNanos
                     }
                     lastFrameTimeNanos = frameTimeNanos
                 }
@@ -71,11 +73,18 @@ fun GamePlayScreen(
         var accumulatedDragY by remember { mutableFloatStateOf(0f) }
         val swipeThreshold = 30f
 
+        val currentTick = frameTick
+
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(Unit) {
                     detectTapGestures(
+                        onTap = {
+                            if (engine.gameState.value == GameState.COUNTDOWN) {
+                                engine.skipCountdown()
+                            }
+                        },
                         onDoubleTap = {
                             engine.activateHoverboard()
                         }
@@ -84,6 +93,9 @@ fun GamePlayScreen(
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragStart = {
+                            if (engine.gameState.value == GameState.COUNTDOWN) {
+                                engine.skipCountdown()
+                            }
                             accumulatedDragX = 0f
                             accumulatedDragY = 0f
                         },
@@ -97,16 +109,20 @@ fun GamePlayScreen(
                                     if (accumulatedDragX < -swipeThreshold) {
                                         engine.moveLeft()
                                         accumulatedDragX = 0f
+                                        accumulatedDragY = 0f
                                     } else if (accumulatedDragX > swipeThreshold) {
                                         engine.moveRight()
                                         accumulatedDragX = 0f
+                                        accumulatedDragY = 0f
                                     }
                                 } else {
                                     if (accumulatedDragY < -swipeThreshold) {
                                         engine.jump()
+                                        accumulatedDragX = 0f
                                         accumulatedDragY = 0f
                                     } else if (accumulatedDragY > swipeThreshold) {
                                         engine.slide()
+                                        accumulatedDragX = 0f
                                         accumulatedDragY = 0f
                                     }
                                 }
@@ -115,12 +131,16 @@ fun GamePlayScreen(
                     )
                 }
         ) {
+            // Reference tick inside draw scope to ensure continuous redrawing
+            @Suppress("UNUSED_VARIABLE")
+            val t = currentTick
             GameRenderer3D.drawWorld(this, engine, size.width, size.height)
         }
 
         // 2. In-Game HUD (Heads-Up Display)
         GameHudOverlay(
             engine = engine,
+            tick = frameTick,
             onPause = { engine.pauseGame() }
         )
 
@@ -350,8 +370,11 @@ fun GamePlayScreen(
 @Composable
 private fun GameHudOverlay(
     engine: GameEngine,
+    tick: Long = 0L,
     onPause: () -> Unit
 ) {
+    @Suppress("UNUSED_VARIABLE")
+    val t = tick
     Column(
         modifier = Modifier
             .fillMaxWidth()

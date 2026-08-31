@@ -153,8 +153,8 @@ class GameEngine(
         collectibles.clear()
         particles.clear()
 
-        nextObstacleZ = 35f
-        nextCollectibleZ = 15f
+        nextObstacleZ = 45f
+        nextCollectibleZ = 16f
 
         setupGhostRacers()
     }

@@ -35,6 +35,7 @@ fun ProfileScreen(
     onUpdateProfile: (name: String, country: String, flag: String) -> Unit,
     onSelectCrew: (crewId: String) -> Unit = {},
     onLogout: () -> Unit = {},
+    onOpenAdmin: () -> Unit = {},
     onBack: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -406,6 +407,32 @@ fun ProfileScreen(
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold
                         )
+                    }
+
+                    // Admin Dashboard Button
+                    OutlinedButton(
+                        onClick = {
+                            SoundEngine.playMenuClick()
+                            onOpenAdmin()
+                        },
+                        border = ButtonDefaults.outlinedButtonBorder(true),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(text = "👑", fontSize = 14.sp)
+                            Text(
+                                text = "Paneli ya Msimamizi (Admin Panel)",
+                                color = NeonGold,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                        }
                     }
                 }
             }

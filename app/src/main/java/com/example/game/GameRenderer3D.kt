@@ -468,13 +468,14 @@ object GameRenderer3D {
         vanishingX: Float,
         roadBottomWidth: Float
     ): Triple<Float, Float, Float> {
-        val depthFactor = 0.032f
-        val scale = (1f / (1f + z * depthFactor)).coerceIn(0f, 1.2f)
-        val roadY = horizonY + (height * 0.81f - horizonY) * (scale * scale)
+        val depthFactor = 0.030f
+        val scale = (1f / (1f + z * depthFactor)).coerceIn(0f, 1.4f)
+        val playerGroundY = height * 0.63f
+        val roadY = horizonY + (playerGroundY - horizonY) * (scale * scale)
 
-        val laneSpread = (roadBottomWidth * 0.33f) * scale
+        val laneSpread = (roadBottomWidth * 0.28f) * scale
         val screenX = vanishingX + (laneX * laneSpread)
-        val screenY = roadY - (laneY * 95f * scale)
+        val screenY = roadY - (laneY * 110f * scale)
 
         return Triple(screenX, screenY, scale)
     }
@@ -502,6 +503,7 @@ object GameRenderer3D {
         }
 
         renderList.forEach { item ->
+            val baseScale = (width / 360f).coerceIn(1.0f, 3.2f)
             when (item) {
                 is Obstacle -> {
                     val relZ = item.zDistance - engine.distanceRunMeters
@@ -515,7 +517,7 @@ object GameRenderer3D {
                         vanishingX,
                         roadBottomWidth
                     )
-                    drawObstacle(scope, item, sx, sy, scale)
+                    drawObstacle(scope, item, sx, sy, scale * baseScale)
                 }
                 is Collectible -> {
                     val relZ = item.zDistance - engine.distanceRunMeters
@@ -529,7 +531,7 @@ object GameRenderer3D {
                         vanishingX,
                         roadBottomWidth
                     )
-                    drawCollectible(scope, item, sx, sy, scale, engine.runTimeSeconds)
+                    drawCollectible(scope, item, sx, sy, scale * baseScale, engine.runTimeSeconds)
                 }
             }
         }
@@ -1034,29 +1036,30 @@ object GameRenderer3D {
             roadBottomWidth
         )
 
+        val baseScale = (width / 360f).coerceIn(1.0f, 3.2f)
         val character = engine.selectedCharacter
         val isSliding = engine.isSliding
         val isJumping = engine.isJumping
         val time = engine.runTimeSeconds
         val runCycle = time * 14f
 
-        val runnerW = if (isSliding) 54f else 46f
-        val runnerH = if (isSliding) 32f else 78f
+        val runnerW = (if (isSliding) 60f else 48f) * baseScale
+        val runnerH = (if (isSliding) 36f else 88f) * baseScale
         val top = py - runnerH
 
         // 1. Dynamic Shadow on Road
         val shadowScale = (1f - (engine.playerY / 4f)).coerceIn(0.3f, 1f)
-        val groundRoadY = horizonY + (height * 0.81f - horizonY)
+        val groundRoadY = horizonY + (height * 0.63f - horizonY)
         val shadowY = groundRoadY
         scope.drawOval(
             color = Color.Black.copy(alpha = 0.55f * shadowScale),
-            topLeft = Offset(px - (runnerW * 0.6f * shadowScale), shadowY - 8f),
-            size = Size(runnerW * 1.2f * shadowScale, 16f * shadowScale)
+            topLeft = Offset(px - (runnerW * 0.6f * shadowScale), shadowY - (8f * baseScale)),
+            size = Size(runnerW * 1.2f * shadowScale, 16f * baseScale * shadowScale)
         )
 
         // 2. Shield Bubble Effect
         if (engine.isPowerUpActive(PowerUpType.ENERGY_SHIELD) || engine.shieldCount > 0) {
-            val pulse = sin(time * 8f) * 4f
+            val pulse = sin(time * 8f) * (4f * baseScale)
             scope.drawCircle(
                 color = ElectricCyan.copy(alpha = 0.25f),
                 radius = runnerH * 0.65f + pulse,
@@ -1066,7 +1069,7 @@ object GameRenderer3D {
                 color = ElectricCyan,
                 radius = runnerH * 0.65f + pulse,
                 center = Offset(px, top + runnerH * 0.5f),
-                style = Stroke(width = 3f)
+                style = Stroke(width = 3f * baseScale)
             )
         }
 
@@ -1086,9 +1089,9 @@ object GameRenderer3D {
                 startAngle = 180f,
                 sweepAngle = 180f,
                 useCenter = false,
-                topLeft = Offset(px - 36f, top - 24f),
-                size = Size(72f, 36f),
-                style = Stroke(width = 3f)
+                topLeft = Offset(px - (36f * baseScale), top - (24f * baseScale)),
+                size = Size(72f * baseScale, 36f * baseScale),
+                style = Stroke(width = 3f * baseScale)
             )
         }
 
@@ -1098,34 +1101,34 @@ object GameRenderer3D {
             // Left & Right Metallic Thruster Pods
             scope.drawRoundRect(
                 color = TanzaniteBlue,
-                topLeft = Offset(px - 22f, top + 18f),
-                size = Size(10f, 26f),
-                cornerRadius = CornerRadius(4f, 4f)
+                topLeft = Offset(px - (22f * baseScale), top + (18f * baseScale)),
+                size = Size(10f * baseScale, 26f * baseScale),
+                cornerRadius = CornerRadius(4f * baseScale, 4f * baseScale)
             )
             scope.drawRoundRect(
                 color = TanzaniteBlue,
-                topLeft = Offset(px + 12f, top + 18f),
-                size = Size(10f, 26f),
-                cornerRadius = CornerRadius(4f, 4f)
+                topLeft = Offset(px + (12f * baseScale), top + (18f * baseScale)),
+                size = Size(10f * baseScale, 26f * baseScale),
+                cornerRadius = CornerRadius(4f * baseScale, 4f * baseScale)
             )
             // Thruster Exhaust Flame Cones
-            val flamePulse = (sin(time * 24f) * 4f).coerceAtLeast(0f)
+            val flamePulse = (sin(time * 24f) * 4f * baseScale).coerceAtLeast(0f)
             val flamePathL = Path().apply {
-                moveTo(px - 22f, top + 44f)
-                lineTo(px - 12f, top + 44f)
-                lineTo(px - 17f, top + 58f + flamePulse)
+                moveTo(px - (22f * baseScale), top + (44f * baseScale))
+                lineTo(px - (12f * baseScale), top + (44f * baseScale))
+                lineTo(px - (17f * baseScale), top + (58f * baseScale) + flamePulse)
                 close()
             }
             scope.drawPath(flamePathL, color = CrimsonFire)
             val flamePathR = Path().apply {
-                moveTo(px + 12f, top + 44f)
-                lineTo(px + 22f, top + 44f)
-                lineTo(px + 17f, top + 58f + flamePulse)
+                moveTo(px + (12f * baseScale), top + (44f * baseScale))
+                lineTo(px + (22f * baseScale), top + (44f * baseScale))
+                lineTo(px + (17f * baseScale), top + (58f * baseScale) + flamePulse)
                 close()
             }
             scope.drawPath(flamePathR, color = CrimsonFire)
-            scope.drawCircle(color = SerengetiYellow, radius = 3f, center = Offset(px - 17f, top + 46f))
-            scope.drawCircle(color = SerengetiYellow, radius = 3f, center = Offset(px + 17f, top + 46f))
+            scope.drawCircle(color = SerengetiYellow, radius = 3f * baseScale, center = Offset(px - (17f * baseScale), top + (46f * baseScale)))
+            scope.drawCircle(color = SerengetiYellow, radius = 3f * baseScale, center = Offset(px + (17f * baseScale), top + (46f * baseScale)))
         }
 
         if (isSliding) {
@@ -1134,90 +1137,90 @@ object GameRenderer3D {
                 color = character.outfitColor,
                 topLeft = Offset(px - runnerW / 2, top),
                 size = Size(runnerW, runnerH),
-                cornerRadius = CornerRadius(10f, 10f)
+                cornerRadius = CornerRadius(10f * baseScale, 10f * baseScale)
             )
             // Head
             scope.drawCircle(
                 color = Color(0xFF78350F), // Rich skin tone
-                radius = 11f,
-                center = Offset(px + runnerW * 0.35f, top + 10f)
+                radius = 12f * baseScale,
+                center = Offset(px + runnerW * 0.35f, top + (10f * baseScale))
             )
             // Sparkles from road friction
-            scope.drawCircle(color = SerengetiYellow, radius = 4f, center = Offset(px - runnerW * 0.4f, py - 2f))
+            scope.drawCircle(color = SerengetiYellow, radius = 4f * baseScale, center = Offset(px - runnerW * 0.4f, py - (2f * baseScale)))
         } else {
             // Upright Running & Jumping Animation
-            val legSwing = sin(runCycle) * 16f
-            val armSwing = cos(runCycle) * 14f
+            val legSwing = sin(runCycle) * (18f * baseScale)
+            val armSwing = cos(runCycle) * (16f * baseScale)
 
             // Legs (Running strides)
             if (!isJumping) {
                 // Left Leg
                 scope.drawLine(
                     color = Color(0xFF1E293B),
-                    start = Offset(px - 10f, top + runnerH * 0.6f),
-                    end = Offset(px - 10f + legSwing, py),
-                    strokeWidth = 8f
+                    start = Offset(px - (10f * baseScale), top + runnerH * 0.6f),
+                    end = Offset(px - (10f * baseScale) + legSwing, py),
+                    strokeWidth = 8f * baseScale
                 )
                 // Right Leg
                 scope.drawLine(
                     color = Color(0xFF1E293B),
-                    start = Offset(px + 10f, top + runnerH * 0.6f),
-                    end = Offset(px + 10f - legSwing, py),
-                    strokeWidth = 8f
+                    start = Offset(px + (10f * baseScale), top + runnerH * 0.6f),
+                    end = Offset(px + (10f * baseScale) - legSwing, py),
+                    strokeWidth = 8f * baseScale
                 )
                 // Shoes (Vibrant sneakers)
-                scope.drawCircle(color = character.accentColor, radius = 5f, center = Offset(px - 10f + legSwing, py))
-                scope.drawCircle(color = character.accentColor, radius = 5f, center = Offset(px + 10f - legSwing, py))
+                scope.drawCircle(color = character.accentColor, radius = 5f * baseScale, center = Offset(px - (10f * baseScale) + legSwing, py))
+                scope.drawCircle(color = character.accentColor, radius = 5f * baseScale, center = Offset(px + (10f * baseScale) - legSwing, py))
             } else {
                 // Jumping Tuck Legs
                 scope.drawLine(
                     color = Color(0xFF1E293B),
-                    start = Offset(px - 10f, top + runnerH * 0.6f),
-                    end = Offset(px - 14f, py - 12f),
-                    strokeWidth = 8f
+                    start = Offset(px - (10f * baseScale), top + runnerH * 0.6f),
+                    end = Offset(px - (14f * baseScale), py - (12f * baseScale)),
+                    strokeWidth = 8f * baseScale
                 )
                 scope.drawLine(
                     color = Color(0xFF1E293B),
-                    start = Offset(px + 10f, top + runnerH * 0.6f),
-                    end = Offset(px + 14f, py - 12f),
-                    strokeWidth = 8f
+                    start = Offset(px + (10f * baseScale), top + runnerH * 0.6f),
+                    end = Offset(px + (14f * baseScale), py - (12f * baseScale)),
+                    strokeWidth = 8f * baseScale
                 )
             }
 
             // Torso (African Kitenge / Streetwear Hoodie)
             scope.drawRoundRect(
                 color = character.outfitColor,
-                topLeft = Offset(px - 16f, top + 22f),
-                size = Size(32f, 32f),
-                cornerRadius = CornerRadius(6f, 6f)
+                topLeft = Offset(px - (18f * baseScale), top + (22f * baseScale)),
+                size = Size(36f * baseScale, 36f * baseScale),
+                cornerRadius = CornerRadius(6f * baseScale, 6f * baseScale)
             )
 
             // Pattern Accent Stripe
             scope.drawRect(
                 color = character.accentColor,
-                topLeft = Offset(px - 6f, top + 24f),
-                size = Size(12f, 28f)
+                topLeft = Offset(px - (6f * baseScale), top + (24f * baseScale)),
+                size = Size(12f * baseScale, 32f * baseScale)
             )
 
             // Arms
             scope.drawLine(
                 color = character.outfitColor,
-                start = Offset(px - 16f, top + 26f),
-                end = Offset(px - 22f, top + 42f + armSwing),
-                strokeWidth = 6f
+                start = Offset(px - (18f * baseScale), top + (26f * baseScale)),
+                end = Offset(px - (24f * baseScale), top + (44f * baseScale) + armSwing),
+                strokeWidth = 7f * baseScale
             )
             scope.drawLine(
                 color = character.outfitColor,
-                start = Offset(px + 16f, top + 26f),
-                end = Offset(px + 22f, top + 42f - armSwing),
-                strokeWidth = 6f
+                start = Offset(px + (18f * baseScale), top + (26f * baseScale)),
+                end = Offset(px + (24f * baseScale), top + (44f * baseScale) - armSwing),
+                strokeWidth = 7f * baseScale
             )
 
             // Head (Rich African Skin Tone)
             scope.drawCircle(
                 color = Color(0xFF78350F),
-                radius = 12f,
-                center = Offset(px, top + 12f)
+                radius = 13f * baseScale,
+                center = Offset(px, top + (13f * baseScale))
             )
 
             // Headband / Cap
@@ -1226,24 +1229,23 @@ object GameRenderer3D {
                 startAngle = 180f,
                 sweepAngle = 180f,
                 useCenter = true,
-                topLeft = Offset(px - 12f, top),
-                size = Size(24f, 16f)
+                topLeft = Offset(px - (13f * baseScale), top),
+                size = Size(26f * baseScale, 16f * baseScale)
             )
         }
 
         // 6. Active 3D Hoverboard Deck & Thruster Particle Glow
         if (engine.isHoverboardActive) {
             val board = engine.selectedHoverboard
-            val boardTilt = sin(time * 10f) * 4f
-            val boardW = 68f
-            val boardH = 14f
-            val boardY = py + 2f + sin(time * 8f) * 3f
+            val boardW = 74f * baseScale
+            val boardH = 16f * baseScale
+            val boardY = py + (2f * baseScale) + sin(time * 8f) * (3f * baseScale)
 
             // Shadow under hoverboard
             scope.drawOval(
                 color = board.trailColor.copy(alpha = 0.4f),
-                topLeft = Offset(px - boardW * 0.55f, boardY + 6f),
-                size = Size(boardW * 1.1f, 10f)
+                topLeft = Offset(px - boardW * 0.55f, boardY + (6f * baseScale)),
+                size = Size(boardW * 1.1f, 10f * baseScale)
             )
 
             // Outer Neon Deck Rim
@@ -1251,7 +1253,7 @@ object GameRenderer3D {
                 color = board.trailColor,
                 topLeft = Offset(px - boardW / 2, boardY - boardH / 2),
                 size = Size(boardW, boardH),
-                cornerRadius = CornerRadius(8f, 8f)
+                cornerRadius = CornerRadius(8f * baseScale, 8f * baseScale)
             )
 
             // Inner Deck Core
@@ -1259,93 +1261,92 @@ object GameRenderer3D {
                 color = board.primaryColor,
                 topLeft = Offset(px - boardW * 0.42f, boardY - boardH * 0.35f),
                 size = Size(boardW * 0.84f, boardH * 0.7f),
-                cornerRadius = CornerRadius(6f, 6f)
+                cornerRadius = CornerRadius(6f * baseScale, 6f * baseScale)
             )
 
             // Center African Motif / Energy Core
             scope.drawCircle(
                 color = Color.White,
-                radius = 4f,
+                radius = 4f * baseScale,
                 center = Offset(px, boardY)
             )
 
             // Left & Right Thruster Energy Glow
             scope.drawCircle(
                 color = board.trailColor,
-                radius = 6f,
+                radius = 6f * baseScale,
                 center = Offset(px - boardW * 0.38f, boardY)
             )
             scope.drawCircle(
                 color = board.trailColor,
-                radius = 6f,
+                radius = 6f * baseScale,
                 center = Offset(px + boardW * 0.38f, boardY)
             )
         }
 
         // 7. Active 3D Bodaboda Motorcycle & Headlight Beam
         if (engine.isPowerUpActive(PowerUpType.BODABODA_TURBO)) {
-            val bodaW = 72f
-            val bodaH = 42f
-            val bodaY = py + 2f
+            val bodaW = 82f * baseScale
+            val bodaH = 46f * baseScale
+            val bodaY = py + (2f * baseScale)
 
             // Bodaboda Headlight Beam (Projected forward in 3D)
             val beamPath = Path().apply {
-                moveTo(px - 8f, bodaY - 14f)
-                lineTo(px + 8f, bodaY - 14f)
-                lineTo(px + 45f, bodaY - 120f)
-                lineTo(px - 45f, bodaY - 120f)
+                moveTo(px - (8f * baseScale), bodaY - (14f * baseScale))
+                lineTo(px + (8f * baseScale), bodaY - (14f * baseScale))
+                lineTo(px + (50f * baseScale), bodaY - (130f * baseScale))
+                lineTo(px - (50f * baseScale), bodaY - (130f * baseScale))
                 close()
             }
             scope.drawPath(
                 beamPath,
                 brush = Brush.verticalGradient(
                     colors = listOf(NeonGold.copy(alpha = 0.0f), NeonGold.copy(alpha = 0.45f)),
-                    startY = bodaY - 120f,
-                    endY = bodaY - 14f
+                    startY = bodaY - (130f * baseScale),
+                    endY = bodaY - (14f * baseScale)
                 )
             )
 
             // Bodaboda Chassis & Fuel Tank (Bright Tanzanian Red/Amber)
             scope.drawRoundRect(
                 color = BrightAmber,
-                topLeft = Offset(px - bodaW * 0.35f, bodaY - 20f),
-                size = Size(bodaW * 0.7f, 18f),
-                cornerRadius = CornerRadius(6f, 6f)
+                topLeft = Offset(px - bodaW * 0.35f, bodaY - (20f * baseScale)),
+                size = Size(bodaW * 0.7f, 20f * baseScale),
+                cornerRadius = CornerRadius(6f * baseScale, 6f * baseScale)
             )
 
             // Bodaboda Chrome Handlebars
             scope.drawLine(
                 color = Color(0xFFE2E8F0),
-                start = Offset(px - 24f, bodaY - 26f),
-                end = Offset(px + 24f, bodaY - 26f),
-                strokeWidth = 5f
+                start = Offset(px - (26f * baseScale), bodaY - (28f * baseScale)),
+                end = Offset(px + (26f * baseScale), bodaY - (28f * baseScale)),
+                strokeWidth = 5f * baseScale
             )
 
             // Front Headlight
-            scope.drawCircle(color = SerengetiYellow, radius = 7f, center = Offset(px, bodaY - 20f))
-            scope.drawCircle(color = Color.White, radius = 3.5f, center = Offset(px, bodaY - 20f))
+            scope.drawCircle(color = SerengetiYellow, radius = 8f * baseScale, center = Offset(px, bodaY - (22f * baseScale)))
+            scope.drawCircle(color = Color.White, radius = 4f * baseScale, center = Offset(px, bodaY - (22f * baseScale)))
 
             // Spinning Wheels (Front & Rear)
-            val wheelRotation = sin(time * 30f) * 6f
             scope.drawOval(
                 color = Color(0xFF0F172A),
-                topLeft = Offset(px - 22f, bodaY - 8f),
-                size = Size(14f, 22f)
+                topLeft = Offset(px - (24f * baseScale), bodaY - (8f * baseScale)),
+                size = Size(16f * baseScale, 24f * baseScale)
             )
             scope.drawOval(
                 color = Color(0xFF0F172A),
-                topLeft = Offset(px + 8f, bodaY - 8f),
-                size = Size(14f, 22f)
+                topLeft = Offset(px + (8f * baseScale), bodaY - (8f * baseScale)),
+                size = Size(16f * baseScale, 24f * baseScale)
             )
             // Silver Rims
-            scope.drawCircle(color = Color(0xFF94A3B8), radius = 4f, center = Offset(px - 15f, bodaY + 3f))
-            scope.drawCircle(color = Color(0xFF94A3B8), radius = 4f, center = Offset(px + 15f, bodaY + 3f))
+            scope.drawCircle(color = Color(0xFF94A3B8), radius = 5f * baseScale, center = Offset(px - (16f * baseScale), bodaY + (4f * baseScale)))
+            scope.drawCircle(color = Color(0xFF94A3B8), radius = 5f * baseScale, center = Offset(px + (16f * baseScale), bodaY + (4f * baseScale)))
 
             // Exhaust Smoke Puffs
             scope.drawCircle(
                 color = Color.White.copy(alpha = 0.6f),
-                radius = 6f + sin(time * 20f) * 2f,
-                center = Offset(px - 28f, bodaY + 4f)
+                radius = (6f + sin(time * 20f) * 2f) * baseScale,
+                center = Offset(px - (28f * baseScale), bodaY + (4f * baseScale))
             )
         }
     }

@@ -51,6 +51,7 @@ fun HomeScreen(
     onOpenAdmin: () -> Unit,
     onClaimDailyReward: () -> Unit,
     dailyRewardAvailable: Boolean,
+    onOpenAuth: () -> Unit = {},
     onClaimSponsorReward: (coins: Long, gems: Int) -> Unit = { _, _ -> }
 ) {
     val scrollState = rememberScrollState()
@@ -83,6 +84,54 @@ fun HomeScreen(
                 onSettingsClick = onOpenSettings,
                 onAdminClick = onOpenAdmin
             )
+
+            // Registration Prompt if Guest
+            if (!profile.isLoggedIn) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = AfricanEmerald.copy(alpha = 0.2f),
+                    border = ButtonDefaults.outlinedButtonBorder(true),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenAuth() }
+                        .testTag("guest_register_banner")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(text = "🎁", fontSize = 24.sp)
+                            Column {
+                                Text(
+                                    text = "JISAJILI & HIFADHI ALAMA ZAKO!",
+                                    color = AfricanEmerald,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Black
+                                )
+                                Text(
+                                    text = "Pata 5,000🪙 bure ukisajili akaunti sasa",
+                                    color = TextSecondary,
+                                    fontSize = 11.sp
+                                )
+                            }
+                        }
+                        Button(
+                            onClick = onOpenAuth,
+                            colors = ButtonDefaults.buttonColors(containerColor = AfricanEmerald),
+                            shape = RoundedCornerShape(10.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Text(text = "JISAJILI", fontSize = 11.sp, fontWeight = FontWeight.Black, color = Color.White)
+                        }
+                    }
+                }
+            }
 
             // Live Ops: Maintenance Alert (If enabled by Admin)
             if (com.example.game.AdminLiveConfig.isMaintenanceMode) {
@@ -740,16 +789,28 @@ private fun TopProfileBar(
                 )
             }
 
-            IconButton(
-                onClick = onAdminClick,
-                modifier = Modifier.size(32.dp).testTag("admin_button")
+            // Prominent Gold Admin Button
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = NeonGold.copy(alpha = 0.2f),
+                border = ButtonDefaults.outlinedButtonBorder(true),
+                modifier = Modifier
+                    .clickable { onAdminClick() }
+                    .testTag("admin_button")
             ) {
-                Icon(
-                    imageVector = Icons.Default.Build,
-                    contentDescription = "Admin",
-                    tint = NeonGold,
-                    modifier = Modifier.size(18.dp)
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 5.dp)
+                ) {
+                    Text(text = "👑", fontSize = 12.sp)
+                    Text(
+                        text = "ADMIN",
+                        color = NeonGold,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
             }
         }
     }
