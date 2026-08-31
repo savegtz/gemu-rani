@@ -163,6 +163,85 @@ fun AdminDashboardScreen(
                     }
                 }
             }
+
+            // Sponsor Ad Campaigns & Analytics Section
+            Text(
+                text = "CLIENT SPONSORS & ADS (BANGO LA WATEJA)",
+                color = TextSecondary,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp
+            )
+
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = DarkBgCard),
+                border = ButtonDefaults.outlinedButtonBorder(true),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Active Sponsor Campaigns & Live Stats",
+                        color = NeonGold,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    com.example.game.SponsorAdsManager.activeCampaigns.forEach { campaign ->
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = DarkBgCardElevated,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    Text(text = campaign.logoEmoji, fontSize = 24.sp)
+                                    Column {
+                                        Text(
+                                            text = campaign.title,
+                                            color = TextPrimary,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = "${campaign.clientName} • ${campaign.targetUrl}",
+                                            color = TextSecondary,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        text = "${campaign.impressions} Views",
+                                        color = ElectricCyan,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "${campaign.clicks} Clicks",
+                                        color = NeonGold,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

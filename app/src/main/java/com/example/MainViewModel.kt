@@ -192,6 +192,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun claimSponsorAdReward(coins: Long = 500L, gems: Int = 10) {
+        viewModelScope.launch {
+            repository.grantAdminCurrency(coins, gems)
+        }
+    }
+
+    fun selectCrew(crewId: String) {
+        viewModelScope.launch {
+            repository.selectCrew(crewId)
+        }
+    }
+
     fun updateProfile(name: String, country: String, flag: String) {
         viewModelScope.launch {
             repository.updateProfileInfo(name, country, flag)

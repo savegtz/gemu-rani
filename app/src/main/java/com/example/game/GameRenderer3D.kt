@@ -58,30 +58,79 @@ object GameRenderer3D {
         horizonY: Float
     ) {
         val world = engine.selectedWorld
+        val weather = engine.currentWeather
+
+        val skyTop = when (weather) {
+            WeatherType.RAINY -> Color(0xFF0F172A)
+            WeatherType.NEON_NIGHT -> Color(0xFF030712)
+            WeatherType.SUNNY -> world.skyColorTop
+        }
+        val skyBottom = when (weather) {
+            WeatherType.RAINY -> Color(0xFF334155)
+            WeatherType.NEON_NIGHT -> Color(0xFF1E1B4B)
+            WeatherType.SUNNY -> world.skyColorBottom
+        }
 
         // Sky gradient
         scope.drawRect(
             brush = Brush.verticalGradient(
-                colors = listOf(world.skyColorTop, world.skyColorBottom),
+                colors = listOf(skyTop, skyBottom),
                 startY = 0f,
                 endY = horizonY
             ),
             size = Size(width, horizonY)
         )
 
-        // African Sun / Moon
+        // Weather Celestial Body (Sun vs Glowing Crescent Moon & Stars)
         val sunX = width * 0.78f
         val sunY = horizonY * 0.35f
-        scope.drawCircle(
-            color = SerengetiYellow.copy(alpha = 0.85f),
-            radius = width * 0.08f,
-            center = Offset(sunX, sunY)
-        )
-        scope.drawCircle(
-            color = NeonGold.copy(alpha = 0.25f),
-            radius = width * 0.14f,
-            center = Offset(sunX, sunY)
-        )
+
+        if (weather == WeatherType.NEON_NIGHT) {
+            // African Crescent Moon
+            scope.drawCircle(
+                color = NeonGold.copy(alpha = 0.9f),
+                radius = width * 0.06f,
+                center = Offset(sunX, sunY)
+            )
+            scope.drawCircle(
+                color = skyTop,
+                radius = width * 0.05f,
+                center = Offset(sunX - width * 0.02f, sunY - width * 0.015f)
+            )
+            // Shimmering Stars in the African Night Sky
+            for (st in 0 until 14) {
+                val starX = width * (0.05f + ((st * 73) % 90) / 100f)
+                val starY = horizonY * (0.1f + ((st * 47) % 65) / 100f)
+                val starGlow = 0.4f + (sin(engine.runTimeSeconds * 4f + st) * 0.3f)
+                scope.drawCircle(
+                    color = Color.White.copy(alpha = starGlow.coerceIn(0.2f, 1f)),
+                    radius = 2.5f,
+                    center = Offset(starX, starY)
+                )
+            }
+        } else if (weather == WeatherType.SUNNY) {
+            // African Golden Sun
+            scope.drawCircle(
+                color = SerengetiYellow.copy(alpha = 0.85f),
+                radius = width * 0.08f,
+                center = Offset(sunX, sunY)
+            )
+            scope.drawCircle(
+                color = NeonGold.copy(alpha = 0.25f),
+                radius = width * 0.14f,
+                center = Offset(sunX, sunY)
+            )
+        } else {
+            // Monsoon Rain Cloud layer
+            for (c in 0 until 5) {
+                val cx = width * (0.15f + c * 0.2f)
+                scope.drawCircle(
+                    color = Color(0xFF475569).copy(alpha = 0.8f),
+                    radius = 35f,
+                    center = Offset(cx, horizonY * 0.3f)
+                )
+            }
+        }
 
         // Horizon Landmarks Silhouette
         when (world.id) {
@@ -122,25 +171,53 @@ object GameRenderer3D {
                 }
             }
             else -> {
-                // Dar es Salaam / Dodoma Skylines
+                // Dar es Salaam / Dodoma Skylines with glowing windows at night
                 for (i in 0 until 9) {
                     val bx = width * (0.05f + i * 0.11f)
                     val bh = 30f + (sin(i * 1.8f) * 20f + 25f)
                     scope.drawRect(
-                        color = Color(0xFF0F172A).copy(alpha = 0.7f),
+                        color = Color(0xFF0F172A).copy(alpha = 0.85f),
                         topLeft = Offset(bx, horizonY - bh),
                         size = Size(width * 0.08f, bh)
                     )
+                    if (weather == WeatherType.NEON_NIGHT) {
+                        // Neon windows
+                        scope.drawCircle(
+                            color = NeonGold.copy(alpha = 0.7f),
+                            radius = 2f,
+                            center = Offset(bx + 10f, horizonY - bh + 12f)
+                        )
+                        scope.drawCircle(
+                            color = ElectricCyan.copy(alpha = 0.7f),
+                            radius = 2f,
+                            center = Offset(bx + 22f, horizonY - bh + 24f)
+                        )
+                    }
                 }
             }
         }
 
         // Ground savannah / ocean trim
         scope.drawRect(
-            color = world.groundColor,
+            color = if (weather == WeatherType.NEON_NIGHT) Color(0xFF0F172A) else world.groundColor,
             topLeft = Offset(0f, horizonY),
             size = Size(width, height - horizonY)
         )
+
+        // Dynamic Rain Streaks across the viewport if RAINY
+        if (weather == WeatherType.RAINY) {
+            val t = engine.runTimeSeconds
+            for (r in 0 until 35) {
+                val rx = (width * ((r * 29 + (t * 800f).toInt()) % 1000) / 1000f)
+                val ry = (height * ((r * 43 + (t * 1400f).toInt()) % 1000) / 1000f)
+                scope.drawLine(
+                    color = Color(0x8093C5FD),
+                    start = Offset(rx, ry),
+                    end = Offset(rx - 8f, ry + 22f),
+                    strokeWidth = 2f
+                )
+            }
+        }
     }
 
     private fun draw3DRoad(
@@ -245,14 +322,90 @@ object GameRenderer3D {
             val y = horizonY + (roadBottomY - horizonY) * scale
             val spread = (width * 0.44f) * (1f / (1f + objZ * 0.02f))
 
-            // Left side: Palm Tree / African Baobab
-            val leftX = vanishingX - spread - (30f * scale)
-            drawPalmTree(scope, leftX, y, scale)
+            if (i % 2 == 0) {
+                // Left side: Palm Tree / African Baobab
+                val leftX = vanishingX - spread - (30f * scale)
+                drawPalmTree(scope, leftX, y, scale)
+            } else {
+                // Left side: Sponsor LED Billboard Banner!
+                val leftX = vanishingX - spread - (65f * scale)
+                drawSponsorBillboard(scope, leftX, y, scale, engine.runTimeSeconds)
+            }
 
             // Right side: Streetlight or Fruit Stand
             val rightX = vanishingX + spread + (20f * scale)
             drawStreetlight(scope, rightX, y, scale)
         }
+    }
+
+    private fun drawSponsorBillboard(scope: DrawScope, x: Float, y: Float, scale: Float, time: Float) {
+        val poleH = 100f * scale
+        val boardW = 90f * scale
+        val boardH = 50f * scale
+        val top = y - poleH - boardH
+
+        // Billboard support pole
+        scope.drawLine(
+            color = Color(0xFF334155),
+            start = Offset(x, y),
+            end = Offset(x, y - poleH),
+            strokeWidth = 6f * scale
+        )
+
+        // Neon Glow border
+        val pulse = (sin(time * 6f) * 0.2f + 0.8f).coerceIn(0.5f, 1f)
+        val activeAd = SponsorAdsManager.getActiveCampaign()
+
+        scope.drawRoundRect(
+            color = NeonGold.copy(alpha = 0.4f * pulse),
+            topLeft = Offset(x - boardW / 2 - 4f * scale, top - 4f * scale),
+            size = Size(boardW + 8f * scale, boardH + 8f * scale),
+            cornerRadius = CornerRadius(6f * scale, 6f * scale)
+        )
+
+        // Screen frame (Dark metal)
+        scope.drawRoundRect(
+            color = Color(0xFF0F172A),
+            topLeft = Offset(x - boardW / 2, top),
+            size = Size(boardW, boardH),
+            cornerRadius = CornerRadius(4f * scale, 4f * scale)
+        )
+
+        // Screen display interior (Vibrant LED billboard)
+        scope.drawRoundRect(
+            color = Color(0xFF1E1B4B),
+            topLeft = Offset(x - boardW / 2 + 3f * scale, top + 3f * scale),
+            size = Size(boardW - 6f * scale, boardH - 6f * scale),
+            cornerRadius = CornerRadius(3f * scale, 3f * scale)
+        )
+
+        // Brand logo & ad graphic representation
+        scope.drawCircle(
+            color = BrightAmber,
+            radius = 9f * scale,
+            center = Offset(x - boardW * 0.25f, top + boardH * 0.45f)
+        )
+
+        // Text lines representation on digital billboard
+        scope.drawRoundRect(
+            color = NeonGold,
+            topLeft = Offset(x - boardW * 0.08f, top + boardH * 0.3f),
+            size = Size(boardW * 0.45f, 5f * scale),
+            cornerRadius = CornerRadius(2f * scale, 2f * scale)
+        )
+        scope.drawRoundRect(
+            color = ElectricCyan,
+            topLeft = Offset(x - boardW * 0.08f, top + boardH * 0.55f),
+            size = Size(boardW * 0.35f, 4f * scale),
+            cornerRadius = CornerRadius(2f * scale, 2f * scale)
+        )
+
+        // SPONSOR badge at top of billboard
+        scope.drawRect(
+            color = CrimsonFire,
+            topLeft = Offset(x - boardW * 0.4f, top + 4f * scale),
+            size = Size(boardW * 0.35f, 4f * scale)
+        )
     }
 
     private fun drawPalmTree(scope: DrawScope, x: Float, y: Float, scale: Float) {
@@ -454,6 +607,67 @@ object GameRenderer3D {
 
                 // Center single headlight
                 scope.drawCircle(color = ElectricCyan, radius = 6f * scale, center = Offset(x, y - 12f * scale))
+            }
+            ObstacleType.JUMP_RAMP -> {
+                // Stunt Launch Ramp (Bright Golden Neon Incline with Upward Arrows)
+                val w = 84f * scale
+                val h = 42f * scale
+                val top = y - h
+
+                // Shadow
+                scope.drawOval(
+                    color = Color.Black.copy(alpha = 0.45f),
+                    topLeft = Offset(x - w * 0.52f, y - 6f * scale),
+                    size = Size(w * 1.04f, 14f * scale)
+                )
+
+                // Angled Ramp Deck (Trapezoid)
+                val rampPath = Path().apply {
+                    moveTo(x - w * 0.4f, top)
+                    lineTo(x + w * 0.4f, top)
+                    lineTo(x + w * 0.5f, y)
+                    lineTo(x - w * 0.5f, y)
+                    close()
+                }
+                scope.drawPath(
+                    path = rampPath,
+                    brush = Brush.verticalGradient(
+                        listOf(NeonGold, SerengetiYellow, SunburstOrange),
+                        startY = top,
+                        endY = y
+                    )
+                )
+
+                // Neon Golden Glowing Trim Rails
+                scope.drawLine(
+                    color = ElectricCyan,
+                    start = Offset(x - w * 0.5f, y),
+                    end = Offset(x - w * 0.4f, top),
+                    strokeWidth = 4f * scale
+                )
+                scope.drawLine(
+                    color = ElectricCyan,
+                    start = Offset(x + w * 0.5f, y),
+                    end = Offset(x + w * 0.4f, top),
+                    strokeWidth = 4f * scale
+                )
+
+                // Top Launch Platform Glow
+                scope.drawRoundRect(
+                    color = Color.White,
+                    topLeft = Offset(x - w * 0.35f, top - 3f * scale),
+                    size = Size(w * 0.7f, 6f * scale),
+                    cornerRadius = CornerRadius(2f * scale, 2f * scale)
+                )
+
+                // Upward Launch Arrow Triangles
+                val arrowPath = Path().apply {
+                    moveTo(x, top + 10f * scale)
+                    lineTo(x - 10f * scale, top + 24f * scale)
+                    lineTo(x + 10f * scale, top + 24f * scale)
+                    close()
+                }
+                scope.drawPath(arrowPath, color = Color(0xFF0F172A))
             }
             ObstacleType.BODABODA -> {
                 // Bodaboda Motorcycle with delivery crate
@@ -863,6 +1077,41 @@ object GameRenderer3D {
         }
 
         // 5. Runner Anatomy & African Outfits
+        // Jetpack Twin Rocket Boosters (rendered behind player)
+        if (engine.isJetpackActive) {
+            // Left & Right Metallic Thruster Pods
+            scope.drawRoundRect(
+                color = TanzaniteBlue,
+                topLeft = Offset(px - 22f, top + 18f),
+                size = Size(10f, 26f),
+                cornerRadius = CornerRadius(4f, 4f)
+            )
+            scope.drawRoundRect(
+                color = TanzaniteBlue,
+                topLeft = Offset(px + 12f, top + 18f),
+                size = Size(10f, 26f),
+                cornerRadius = CornerRadius(4f, 4f)
+            )
+            // Thruster Exhaust Flame Cones
+            val flamePulse = (sin(time * 24f) * 4f).coerceAtLeast(0f)
+            val flamePathL = Path().apply {
+                moveTo(px - 22f, top + 44f)
+                lineTo(px - 12f, top + 44f)
+                lineTo(px - 17f, top + 58f + flamePulse)
+                close()
+            }
+            scope.drawPath(flamePathL, color = CrimsonFire)
+            val flamePathR = Path().apply {
+                moveTo(px + 12f, top + 44f)
+                lineTo(px + 22f, top + 44f)
+                lineTo(px + 17f, top + 58f + flamePulse)
+                close()
+            }
+            scope.drawPath(flamePathR, color = CrimsonFire)
+            scope.drawCircle(color = SerengetiYellow, radius = 3f, center = Offset(px - 17f, top + 46f))
+            scope.drawCircle(color = SerengetiYellow, radius = 3f, center = Offset(px + 17f, top + 46f))
+        }
+
         if (isSliding) {
             // Sliding posture (low horizontal dash)
             scope.drawRoundRect(

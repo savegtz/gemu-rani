@@ -185,6 +185,11 @@ class GameRepository(private val playerDao: PlayerDao) {
         playerDao.updateProfile(current.copy(selectedWorldId = worldId))
     }
 
+    suspend fun selectCrew(crewId: String) {
+        val current = playerDao.getPlayerProfileSync() ?: return
+        playerDao.updateProfile(current.copy(selectedCrewId = crewId))
+    }
+
     suspend fun updateProfileInfo(name: String, country: String, flag: String) {
         val current = playerDao.getPlayerProfileSync() ?: return
         playerDao.updateProfile(current.copy(username = name, country = country, countryFlag = flag))

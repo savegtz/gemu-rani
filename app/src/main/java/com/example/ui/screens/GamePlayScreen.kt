@@ -123,27 +123,110 @@ fun GamePlayScreen(
             onPause = { engine.pauseGame() }
         )
 
-        // 3. Hoverboard Protection Alert Banner
-        if (engine.boardSavedCrashMessage) {
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = CrimsonFire.copy(alpha = 0.9f),
-                modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(top = 100.dp)
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+        // 3. Conductor Callout / Stunt / Hoverboard Alert Banners
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 90.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Conductor Live Swahili Shout
+            engine.currentConductorCallout?.let { callout ->
+                Surface(
+                    shape = RoundedCornerShape(18.dp),
+                    color = AfricanEmerald.copy(alpha = 0.95f),
+                    border = ButtonDefaults.outlinedButtonBorder(true),
+                    shadowElevation = 8.dp
                 ) {
-                    Text(text = "🛡️", fontSize = 16.sp)
-                    Text(
-                        text = if (LocalizationManager.currentLanguage.value == AppLanguage.SWAHILI) "Ubao wa Hoverboard Umekuokoa!" else "Hoverboard Shield Saved You!",
-                        color = Color.White,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Black
-                    )
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(text = "📢", fontSize = 18.sp)
+                        Column {
+                            Text(
+                                text = callout.swahiliChant,
+                                color = Color.White,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                            Text(
+                                text = "${callout.englishChant} • Conductor ${callout.emoji}",
+                                color = SerengetiYellow,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Stunt Flip Banner
+            if (engine.stuntFlipTimer > 0f && engine.stuntMessage.isNotEmpty()) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = NeonGold.copy(alpha = 0.95f),
+                    shadowElevation = 6.dp
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(text = "⭐", fontSize = 16.sp)
+                        Text(
+                            text = engine.stuntMessage,
+                            color = DarkBgMain,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+            }
+
+            // Jetpack Sky Mode Banner
+            if (engine.isJetpackActive) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = TanzaniteBlue.copy(alpha = 0.9f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(text = "🚀", fontSize = 14.sp)
+                        Text(
+                            text = "BONGO JETPACK FLYING! SKY COIN DASH",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
+                }
+            }
+
+            // Hoverboard Protection Alert Banner
+            if (engine.boardSavedCrashMessage) {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = CrimsonFire.copy(alpha = 0.9f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(text = "🛡️", fontSize = 16.sp)
+                        Text(
+                            text = if (LocalizationManager.currentLanguage.value == AppLanguage.SWAHILI) "Ubao wa Hoverboard Umekuokoa!" else "Hoverboard Shield Saved You!",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
                 }
             }
         }
@@ -274,11 +357,25 @@ private fun GameHudOverlay(
                 )
             }
 
-            // Distance & Coins
+            // Distance, Coins & Weather
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                // Weather Badge
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = DarkBgCardElevated
+                ) {
+                    Text(
+                        text = "${engine.currentWeather.iconEmoji} ${engine.currentWeather.displayName}",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+
                 // Distance
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(text = "🏃", fontSize = 12.sp)

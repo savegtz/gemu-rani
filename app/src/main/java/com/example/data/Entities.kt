@@ -24,6 +24,7 @@ data class PlayerProfileEntity(
     val selectedWorldId: String = "dar_es_salaam",
     val selectedSkinId: String = "default",
     val selectedTrailId: String = "gold_sparkle",
+    val selectedCrewId: String = "crew_kariakoo",
     // Upgrade levels (1 to 10)
     val speedUpgradeLevel: Int = 2,
     val magnetUpgradeLevel: Int = 2,

@@ -94,7 +94,8 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
                     onOpenSettings = { viewModel.navigateTo(AppScreen.SETTINGS) },
                     onOpenAdmin = { viewModel.navigateTo(AppScreen.ADMIN) },
                     onClaimDailyReward = { viewModel.claimDailyReward() },
-                    dailyRewardAvailable = viewModel.isDailyRewardAvailable()
+                    dailyRewardAvailable = viewModel.isDailyRewardAvailable(),
+                    onClaimSponsorReward = { coins, gems -> viewModel.claimSponsorAdReward(coins, gems) }
                 )
             }
             AppScreen.TOURNAMENT -> {
@@ -162,6 +163,7 @@ fun BongoRunnerApp(viewModel: MainViewModel) {
                 ProfileScreen(
                     profile = profile,
                     onUpdateProfile = { name, country, flag -> viewModel.updateProfile(name, country, flag) },
+                    onSelectCrew = { crewId -> viewModel.selectCrew(crewId) },
                     onBack = { viewModel.navigateTo(AppScreen.HOME) }
                 )
             }

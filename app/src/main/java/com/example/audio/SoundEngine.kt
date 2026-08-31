@@ -228,6 +228,10 @@ object SoundEngine {
         }
     }
 
+    fun startMusic() {
+        startAfricanRhythmBeat()
+    }
+
     private fun playBongoHit(low: Boolean) {
         if (!isSoundEnabled) return
         val duration = (SAMPLE_RATE * 0.09f).toInt()
@@ -359,6 +363,33 @@ object SoundEngine {
                 val sample = (sin(2.0 * PI * freq * t) * 0.45 * env不易 * Short.MAX_VALUE).toInt()
                 buffer[idx] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
             }
+        }
+        playPcm(buffer)
+    }
+
+    fun playJetpackThrust() {
+        val duration = (SAMPLE_RATE * 0.35f).toInt()
+        val buffer = ShortArray(duration)
+        for (i in 0 until duration) {
+            val t = i.toFloat() / SAMPLE_RATE
+            val env = 1f - (i.toFloat() / duration) * 0.2f
+            val hiss = (Random.nextFloat() * 2f - 1f) * 0.35f
+            val roar = sin(2.0 * PI * (120f + sin(t * 40.0) * 30f) * t) * 0.25f
+            val sample = ((hiss + roar) * env * Short.MAX_VALUE).toInt()
+            buffer[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+        }
+        playPcm(buffer)
+    }
+
+    fun playStuntFlip() {
+        val duration = (SAMPLE_RATE * 0.25f).toInt()
+        val buffer = ShortArray(duration)
+        for (i in 0 until duration) {
+            val t = i.toFloat() / SAMPLE_RATE
+            val freq = 300f + sin(t * 30.0) * 200f + (t / 0.25f) * 400f
+            val env = 1f - (i.toFloat() / duration) * 0.1f
+            val sample = (sin(2.0 * PI * freq * t) * 0.4 * env * Short.MAX_VALUE).toInt()
+            buffer[i] = sample.coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
         }
         playPcm(buffer)
     }

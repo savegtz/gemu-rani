@@ -252,6 +252,7 @@ enum class ObstacleType(
     SERENGETI_GIRAFFE("Serengeti Giraffe", requiresJump = false, requiresSlide = true, widthLanes = 1, heightScale = 1.7f),
     SERENGETI_ZEBRA("Zebra Herd Crossing", requiresJump = true, requiresSlide = false, widthLanes = 1, heightScale = 0.85f),
     KIGAMBONI_BARRIER("Kigamboni Toll Gate", requiresJump = true, requiresSlide = false, widthLanes = 1, heightScale = 0.8f),
+    JUMP_RAMP("African Stunt Ramp", requiresJump = false, requiresSlide = false, widthLanes = 1, heightScale = 0.6f),
     MARKET_STALL("Market Fruit Stall", requiresJump = true, requiresSlide = false, widthLanes = 1, heightScale = 0.8f),
     LOW_SWAHILI_ARCH("Low Swahili Archway", requiresJump = false, requiresSlide = true, widthLanes = 1, heightScale = 1.3f),
     HIGH_ROAD_BARRIER("Road Construction Barrier", requiresJump = true, requiresSlide = false, widthLanes = 1, heightScale = 0.75f),
@@ -267,6 +268,7 @@ enum class PowerUpType(
     val baseDurationSeconds: Float
 ) {
     COIN_MAGNET("Coin Magnet", "Pulls coins to you", "🧲", NeonGold, 10f),
+    BONGO_JETPACK("Bongo Jetpack", "Sky high coin dash", "🚀", TanzaniteBlue, 11f),
     ENERGY_SHIELD("Energy Shield", "Absorbs 1 collision", "🛡️", ElectricCyan, 15f),
     SUPER_SPEED("Super Turbo", "Hyper dash & invincibility", "⚡", CrimsonFire, 7f),
     DOUBLE_COINS("2x Coins", "Double all collected coins", "🪙", SerengetiYellow, 12f),
@@ -412,6 +414,104 @@ object TournamentCatalog {
                 worldId = "zanzibar"
             )
         )
+    }
+}
+
+enum class WeatherType(val displayName: String, val swahiliName: String, val iconEmoji: String) {
+    SUNNY("Sunny Safari", "Jua Kali", "☀️"),
+    RAINY("Coastal Monsoon", "Mvua ya Pwani", "🌧️"),
+    NEON_NIGHT("Neon Midnight", "Usiku wa Bongo", "🌙")
+}
+
+data class ConductorCallout(
+    val swahiliChant: String,
+    val englishChant: String,
+    val emoji: String
+)
+
+object ConductorCatalog {
+    val chants = listOf(
+        ConductorCallout("Mwenge! Mwenge hiyoo!", "Mwenge express passing through!", "🚌"),
+        ConductorCallout("Shikilia bomba mwanangu!", "Hold on tight to the railing!", "⚠️"),
+        ConductorCallout("Wahi siti ya dirishani!", "Grab the window seat fast!", "💨"),
+        ConductorCallout("Kariakoo Express!", "Kariakoo high-speed route!", "⚡"),
+        ConductorCallout("Kaza buti kileleni!", "Sprint to the summit!", "🔥"),
+        ConductorCallout("SGR inachanja mbuga!", "Electric train blasting past!", "🚄"),
+        ConductorCallout("Kasi ya Duma Serengeti!", "Cheetah speed on the savanna!", "🐆")
+    )
+
+    fun getRandomChant(): ConductorCallout {
+        return chants.random()
+    }
+}
+
+data class RunnerCrew(
+    val id: String,
+    val name: String,
+    val swahiliName: String,
+    val city: String,
+    val flagEmoji: String,
+    val motto: String,
+    val memberCount: Int,
+    val weeklyScore: Long,
+    val badgeColor: Color,
+    val bonusPerk: String
+)
+
+object CrewCatalog {
+    val allCrews = listOf(
+        RunnerCrew(
+            id = "crew_kariakoo",
+            name = "Kariakoo Speeders",
+            swahiliName = "Wachakarikaji wa Kariakoo",
+            city = "Dar es Salaam",
+            flagEmoji = "⚡",
+            motto = "Hapa Kazi Tu, Mbio za Jiji!",
+            memberCount = 1420,
+            weeklyScore = 845200L,
+            badgeColor = NeonGold,
+            bonusPerk = "+10% Extra Coin Value"
+        ),
+        RunnerCrew(
+            id = "crew_serengeti",
+            name = "Serengeti Hunters",
+            swahiliName = "Wawindaji wa Serengeti",
+            city = "Arusha",
+            flagEmoji = "🐆",
+            motto = "Kasi ya Duma Mbugani!",
+            memberCount = 1180,
+            weeklyScore = 792400L,
+            badgeColor = BrightAmber,
+            bonusPerk = "+15% Longer Turbo Boost"
+        ),
+        RunnerCrew(
+            id = "crew_zanzibar",
+            name = "Zanzibar Wave Surfers",
+            swahiliName = "Wapiga Mbizi wa Unguja",
+            city = "Zanzibar",
+            flagEmoji = "🏄",
+            motto = "Pwani Hatari, Raha Jipe Mwenyewe!",
+            memberCount = 960,
+            weeklyScore = 680100L,
+            badgeColor = ZanzibarTurquoise,
+            bonusPerk = "+20% Hoverboard Duration"
+        ),
+        RunnerCrew(
+            id = "crew_kilimanjaro",
+            name = "Kilimanjaro Striders",
+            swahiliName = "Wapandaji wa Kibo",
+            city = "Moshi",
+            flagEmoji = "🏔️",
+            motto = "Kileleni Ndio Ushindi!",
+            memberCount = 890,
+            weeklyScore = 615000L,
+            badgeColor = AfricanEmerald,
+            bonusPerk = "+25% Super Jump Height"
+        )
+    )
+
+    fun getById(id: String): RunnerCrew {
+        return allCrews.find { it.id == id } ?: allCrews.first()
     }
 }
 

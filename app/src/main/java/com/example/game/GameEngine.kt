@@ -66,6 +66,19 @@ class GameEngine(
     var selectedHoverboard: HoverboardDef = HoverboardCatalog.KILIMANJARO_GLIDER
     var boardSavedCrashMessage = false
 
+    // Jetpack & Stunt State
+    var isJetpackActive = false
+    var jetpackTimeRemaining = 0f
+    var stuntFlipTimer = 0f
+    var stuntMessage: String = ""
+
+    // Conductor Callouts & Roadside Audio
+    var currentConductorCallout: ConductorCallout? = null
+    var conductorCalloutTimer = 0f
+
+    // Dynamic Weather & Environment
+    var currentWeather: WeatherType = WeatherType.SUNNY
+
     // Objects
     val obstacles = mutableListOf<Obstacle>()
     val collectibles = mutableListOf<Collectible>()
@@ -198,6 +211,24 @@ class GameEngine(
         }
     }
 
+    fun revivePlayer() {
+        _gameState.value = GameState.RUNNING
+        invulnerableTimer = 3.5f
+        isHoverboardActive = true
+        hoverboardTimeRemaining = hoverboardMaxTime
+        // Clear nearby obstacles to give player clean road
+        obstacles.removeAll { (it.zDistance - distanceRunMeters) in -5f..20f }
+        SoundEngine.playPowerUp()
+        SoundEngine.playHoverboardOn()
+        SoundEngine.startMusic()
+        spawnExplosionParticles(playerLaneX, playerY + 0.5f, ElectricCyan, 30)
+    }
+
+    fun doubleMatchCoins() {
+        coinsCollected *= 2
+        SoundEngine.playGem()
+    }
+
     // Input actions
     fun moveLeft() {
         if (_gameState.value != GameState.RUNNING) return
@@ -297,6 +328,42 @@ class GameEngine(
     private fun updateRunningGame(dt: Float) {
         runTimeSeconds += dt
 
+        // Dynamic Weather Cycle
+        val weatherPhase = ((distanceRunMeters / 450f).toInt()) % 3
+        currentWeather = when (weatherPhase) {
+            0 -> WeatherType.SUNNY
+            1 -> WeatherType.RAINY
+            else -> WeatherType.NEON_NIGHT
+        }
+
+        // Conductor callout & Stunt timers
+        if (conductorCalloutTimer > 0f) {
+            conductorCalloutTimer -= dt
+            if (conductorCalloutTimer <= 0f) {
+                currentConductorCallout = null
+            }
+        }
+        if (stuntFlipTimer > 0f) {
+            stuntFlipTimer -= dt
+            if (stuntFlipTimer <= 0f) {
+                stuntMessage = ""
+            }
+        }
+
+        // Jetpack mode handling
+        isJetpackActive = isPowerUpActive(PowerUpType.BONGO_JETPACK)
+        if (isJetpackActive) {
+            // Smoothly ascend to sky coin level
+            playerY += (4.2f - playerY) * dt * 5.0f
+            isJumping = false
+            playerVelocityY = 0f
+            // Emit fiery thruster particles
+            spawnJetpackThrusterParticles(playerLaneX, playerY)
+            if (Random.nextFloat() < 0.08f) {
+                SoundEngine.playJetpackThrust()
+            }
+        }
+
         // Hoverboard timer & trail
         if (isHoverboardActive) {
             hoverboardTimeRemaining -= dt
@@ -321,7 +388,8 @@ class GameEngine(
         // Update speed & distance
         val hasSuperSpeed = isPowerUpActive(PowerUpType.SUPER_SPEED)
         val boardSpeedBoost = if (isHoverboardActive && selectedHoverboard.id == "board_serengeti") 1.15f else 1.0f
-        val targetSpeed = (if (hasSuperSpeed) baseSpeed * 1.5f else (baseSpeed + (distanceRunMeters / 150f)).coerceAtMost(maxSpeed)) * boardSpeedBoost
+        val jetpackSpeedBoost = if (isJetpackActive) 1.25f else 1.0f
+        val targetSpeed = (if (hasSuperSpeed) baseSpeed * 1.5f else (baseSpeed + (distanceRunMeters / 150f)).coerceAtMost(maxSpeed)) * boardSpeedBoost * jetpackSpeedBoost
         currentSpeedMetersPerSec += (targetSpeed - currentSpeedMetersPerSec) * dt * 2.0f
 
         val stepDistance = currentSpeedMetersPerSec * dt
@@ -337,16 +405,21 @@ class GameEngine(
         // Interpolate player horizontal position smoothly
         playerLaneX += (playerTargetX - playerLaneX) * dt * 14.0f
 
-        // Jump physics
-        if (isJumping) {
-            val gravity = if (isHoverboardActive && selectedHoverboard.id == "board_kilimanjaro") 22.0f else 28.0f
-            playerY += playerVelocityY * dt
-            playerVelocityY -= gravity * dt // Gravity
-            if (playerY <= 0f) {
-                playerY = 0f
-                isJumping = false
-                playerVelocityY = 0f
-                jumpsRemaining = if (selectedCharacter.id == "asha") 2 else 1
+        // Jump physics (only if not flying on Jetpack)
+        if (!isJetpackActive) {
+            if (isJumping) {
+                val gravity = if (isHoverboardActive && selectedHoverboard.id == "board_kilimanjaro") 22.0f else 28.0f
+                playerY += playerVelocityY * dt
+                playerVelocityY -= gravity * dt // Gravity
+                if (playerY <= 0f) {
+                    playerY = 0f
+                    isJumping = false
+                    playerVelocityY = 0f
+                    jumpsRemaining = if (selectedCharacter.id == "asha") 2 else 1
+                }
+            } else if (playerY > 0f) {
+                // Smooth descent after jetpack ends
+                playerY = (playerY - 6.0f * dt).coerceAtLeast(0f)
             }
         }
 
@@ -385,7 +458,7 @@ class GameEngine(
         updateGhostRacers(dt)
 
         // Trail effect when running
-        if (Random.nextFloat() < 0.35f) {
+        if (Random.nextFloat() < 0.35f && !isJetpackActive) {
             spawnTrailParticles(playerLaneX, playerY, 1)
         }
     }
@@ -398,6 +471,7 @@ class GameEngine(
 
             // Select obstacle type based on world & variety
             val type = when {
+                Random.nextFloat() < 0.14f -> ObstacleType.JUMP_RAMP
                 selectedWorld.id == "zanzibar" && Random.nextFloat() < 0.3f -> ObstacleType.LOW_SWAHILI_ARCH
                 selectedWorld.id == "arusha" && Random.nextFloat() < 0.25f -> ObstacleType.SERENGETI_GIRAFFE
                 selectedWorld.id == "arusha" && Random.nextFloat() < 0.25f -> ObstacleType.SERENGETI_ZEBRA
@@ -460,7 +534,30 @@ class GameEngine(
                 val laneX = obs.lane.xOffset
                 val isSameLane = abs(playerLaneX - laneX) < 0.55f
 
-                if (isSameLane) {
+                // Stunt Jump Ramp Collision
+                if (obs.type == ObstacleType.JUMP_RAMP && isSameLane && !isJetpackActive) {
+                    isJumping = true
+                    playerVelocityY = 16.0f
+                    stuntFlipTimer = 1.3f
+                    stuntMessage = "🚀 SAFARI FLIP! +500 PTS"
+                    score += 500
+                    SoundEngine.playStuntFlip()
+                    spawnExplosionParticles(playerLaneX, playerY + 0.5f, NeonGold, 16)
+                    onMissionEvent("jump", 1)
+                    it.remove()
+                    continue
+                }
+
+                // Conductor near-miss chant on moving vehicles
+                if (isSameLane && (obs.type == ObstacleType.DALADALA || obs.type == ObstacleType.SGR_TRAIN || obs.type == ObstacleType.BAJAJ)) {
+                    if (conductorCalloutTimer <= 0f && Random.nextFloat() < 0.35f) {
+                        currentConductorCallout = ConductorCatalog.getRandomChant()
+                        conductorCalloutTimer = 3.0f
+                        SoundEngine.playConductorWhistle()
+                    }
+                }
+
+                if (isSameLane && !isJetpackActive) {
                     var safe = false
 
                     // If obstacle requires jump and player is high enough in the air
@@ -550,12 +647,14 @@ class GameEngine(
                 // Chain of 3 to 6 Coins
                 else -> {
                     val coinCount = Random.nextInt(3, 7)
+                    val yOff = if (isJetpackActive) 4.2f else 0f
                     for (i in 0 until coinCount) {
                         collectibles.add(
                             Collectible(
                                 id = nextId++,
                                 lane = lane,
-                                zDistance = z + i * 2.2f
+                                zDistance = z + i * 2.2f,
+                                yOffset = yOff
                             )
                         )
                     }
@@ -807,6 +906,26 @@ class GameEngine(
                     life = 1.0f,
                     decay = 0.035f,
                     size = 8f
+                )
+            )
+        }
+    }
+
+    private fun spawnJetpackThrusterParticles(x: Float, y: Float) {
+        val colors = listOf(CrimsonFire, BrightAmber, SerengetiYellow, TanzaniteBlue)
+        for (i in 0 until 4) {
+            particles.add(
+                Particle3D(
+                    x = x + (Random.nextFloat() - 0.5f) * 0.25f,
+                    y = y + 0.1f,
+                    z = 0.1f,
+                    vx = (Random.nextFloat() - 0.5f) * 0.6f,
+                    vy = -Random.nextFloat() * 2.5f - 1.5f,
+                    vz = -2.0f,
+                    color = colors.random(),
+                    life = 0.5f,
+                    decay = 0.08f,
+                    size = 7f
                 )
             )
         }

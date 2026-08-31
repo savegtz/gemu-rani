@@ -28,6 +28,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.ui.platform.LocalContext
 import com.example.R
 import com.example.audio.SoundEngine
 import com.example.data.PlayerProfileEntity
@@ -47,7 +50,8 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onOpenAdmin: () -> Unit,
     onClaimDailyReward: () -> Unit,
-    dailyRewardAvailable: Boolean
+    dailyRewardAvailable: Boolean,
+    onClaimSponsorReward: (coins: Long, gems: Int) -> Unit = { _, _ -> }
 ) {
     val scrollState = rememberScrollState()
     val character = CharacterCatalog.getById(profile.selectedCharacterId)
@@ -55,6 +59,7 @@ fun HomeScreen(
 
     var showWorldPicker by remember { mutableStateOf(false) }
     var showModePicker by remember { mutableStateOf(false) }
+    var showSponsorVideoAd by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -85,7 +90,12 @@ fun HomeScreen(
                 onExplore = { showWorldPicker = true }
             )
 
-            // 3. Daily Reward Banner (if available or claimed)
+            // 3. Client Sponsor Banner (Promoting Client Apps / Websites with Ad Reward)
+            SponsorClientBannerCard(
+                onWatchVideoAd = { showSponsorVideoAd = true }
+            )
+
+            // 4. Daily Reward Banner (if available or claimed)
             DailyRewardCard(
                 available = dailyRewardAvailable,
                 onClaim = onClaimDailyReward
@@ -261,6 +271,237 @@ fun HomeScreen(
                 },
                 onDismiss = { showModePicker = false }
             )
+        }
+
+        // Sponsor Video Ad Modal
+        if (showSponsorVideoAd) {
+            SponsorVideoAdModal(
+                onRewardEarned = { coins, gems ->
+                    onClaimSponsorReward(coins, gems)
+                    showSponsorVideoAd = false
+                },
+                onDismiss = { showSponsorVideoAd = false }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SponsorClientBannerCard(
+    onWatchVideoAd: () -> Unit
+) {
+    val context = LocalContext.current
+    var currentCampaign by remember { mutableStateOf<SponsorCampaign>(SponsorAdsManager.getActiveCampaign()) }
+
+    LaunchedEffect(currentCampaign) {
+        SponsorAdsManager.logAdImpression(currentCampaign.id)
+    }
+
+    val campaign = currentCampaign
+
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = DarkBgCardElevated),
+        border = CardDefaults.outlinedCardBorder().copy(
+            brush = Brush.horizontalGradient(
+                listOf(NeonGold, ZanzibarTurquoise)
+            )
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                SponsorAdsManager.logAdClick(campaign.id)
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(campaign.targetUrl))
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    // Fallback
+                }
+            }
+            .testTag("sponsor_client_banner")
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            // Header: SPONSOR / TANGAZO badge + Next Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Surface(
+                        color = CrimsonFire,
+                        shape = RoundedCornerShape(6.dp)
+                    ) {
+                        Text(
+                            text = campaign.badgeText,
+                            color = Color.White,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Black,
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                        )
+                    }
+
+                    Text(
+                        text = "• ${campaign.brandName}",
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                // Switch ad button
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = DarkBgMain.copy(alpha = 0.6f),
+                    modifier = Modifier.clickable {
+                        SoundEngine.playLaneSwitch()
+                        currentCampaign = SponsorAdsManager.getNextCampaign()
+                    }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(text = "🔄", fontSize = 11.sp)
+                        Text(
+                            text = "Next Ad",
+                            color = TextAccentGold,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // Body: App / Website Icon, Title & Pitch
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Client Brand Avatar
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .background(
+                            brush = Brush.linearGradient(
+                                listOf(DarkBgCard, Color(0xFF1E1B4B))
+                            ),
+                            shape = RoundedCornerShape(14.dp)
+                        )
+                        .border(1.5.dp, BrightAmber, RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = campaign.iconEmoji, fontSize = 28.sp)
+                }
+
+                // Client Pitch Text
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = campaign.headline,
+                        color = TextPrimary,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Black,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = campaign.description,
+                        color = TextSecondary,
+                        fontSize = 11.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+
+            // Action Row: Watch Video Button (+500🪙) & Visit Website Button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Watch Video Modal Button
+                Button(
+                    onClick = {
+                        SoundEngine.playPowerUp()
+                        onWatchVideoAd()
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = BrightAmber),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .weight(1.1f)
+                        .testTag("watch_sponsor_video_ad_btn")
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(text = "🎬", fontSize = 14.sp)
+                        Column {
+                            Text(
+                                text = "Tazama Video",
+                                color = DarkBgMain,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Black
+                            )
+                            Text(
+                                text = "+${campaign.rewardCoins} 🪙 +${campaign.rewardGems} 💎",
+                                color = DarkBgMain.copy(alpha = 0.85f),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+
+                // Open App / Web CTA
+                OutlinedButton(
+                    onClick = {
+                        SponsorAdsManager.logAdClick(campaign.id)
+                        try {
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(campaign.targetUrl))
+                            context.startActivity(intent)
+                        } catch (e: Exception) {}
+                    },
+                    shape = RoundedCornerShape(12.dp),
+                    border = ButtonDefaults.outlinedButtonBorder(true),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = ElectricCyan),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .testTag("visit_sponsor_link_btn")
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.OpenInNew,
+                            contentDescription = null,
+                            tint = ElectricCyan,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = campaign.ctaText,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
         }
     }
 }
