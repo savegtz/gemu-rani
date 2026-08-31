@@ -1,0 +1,7 @@
+{
+  "name": "Bongo Runner",
+  "description": "Original 3D African Endless Runner & Multiplayer Race Game across Tanzanian and East African worlds",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
